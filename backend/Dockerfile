@@ -19,9 +19,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Create upload directory
-RUN mkdir -p /app/uploads && chmod 755 /app/uploads
+RUN mkdir -p /app/uploads /tmp/uploads && chmod 755 /app/uploads /tmp/uploads
 
 EXPOSE 8000
 
-# Startup: apply any pending Alembic migrations then launch the API server
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --loop uvloop"]
+# Render sets $PORT dynamically; fall back to 8000 for local Docker
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
