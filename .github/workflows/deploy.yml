@@ -29,9 +29,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          # API points to localhost for GitHub Pages demo mode
-          # Change this to your deployed backend URL when available
-          VITE_API_URL: /JENAN-BIZ/api-placeholder
+          VITE_API_URL: https://jenan-biz.onrender.com/api
           GITHUB_ACTIONS: 'true'
 
       - name: Copy 404.html for SPA routing
