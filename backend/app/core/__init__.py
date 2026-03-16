@@ -16,8 +16,10 @@ from app.config import get_settings
 settings = get_settings()
 
 # ─── Password hashing (bcrypt) ─────────────────────────
+# bcrypt 4.x changed API — truncate_error=False prevents the ValueError
+# for passwords under 72 bytes (all our passwords are well under that limit)
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__truncate_error=False)
 
 
 def hash_password(password: str) -> str:
