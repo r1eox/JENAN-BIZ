@@ -1,0 +1,65 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ── Environment Files (secrets) ──────────
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# ── Python ───────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+*.egg
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# ── Uploads / Data ──────────────────────
+uploads/
+backend/uploads/
+
+# ── Alembic ─────────────────────────────
+# Keep versions but ignore cached files
+backend/alembic/__pycache__/
+
+# ── Docker ──────────────────────────────
+.docker/
+
+# ── Portable Python runtime (dev only) ──
+py-portable/
+
+# ── Pre-downloaded wheel files ───────────
+*.whl
+
+# ── Dev artifacts ────────────────────────
+*.db
+*.exe
+audit_out.txt
+smoketest.py
+test_flows.ps1

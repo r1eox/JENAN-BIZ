@@ -1,0 +1,95 @@
+# Docker Compose — Full Jenan BIZ Stack
+# Usage:
+#   Dev (DB+Redis only):  docker compose up postgres redis -d
+#   Full stack:           docker compose up -d
+
+version: "3.9"
+
+services:
+  # ── Infrastructure ──────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: jenanbiz-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: jenanbiz
+      POSTGRES_USER: jenanbiz
+      POSTGRES_PASSWORD: jenanbiz_pass
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jenanbiz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: jenanbiz-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend API ────────────────────────
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: jenanbiz-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://jenanbiz:jenanbiz_pass@postgres:5432/jenanbiz"
+      REDIS_URL: "redis://redis:6379/0"
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  # ── ARQ Background Worker ─────────────────────────
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: jenanbiz-worker
+    restart: unless-stopped
+    command: ["sh", "-c", "sleep 5 && python -m arq app.worker.WorkerSettings"]
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://jenanbiz:jenanbiz_pass@postgres:5432/jenanbiz"
+      REDIS_URL: "redis://redis:6379/0"
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  # ── Frontend (nginx + SPA) ─────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jenanbiz-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  uploads:

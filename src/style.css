@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@theme {
+  --font-cairo: 'Cairo', sans-serif;
+  --color-brand: #1a1a2e;
+  --color-brand-light: #2d2d4a;
+  --color-blue: #4a6cf5;
+  --color-blue-light: #6b8aff;
+  --color-blue-dark: #3a56d4;
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+  --color-bg: #f8f9fc;
+  --color-card: #ffffff;
+  --color-text: #1a1a2e;
+  --color-text-light: #6b7280;
+  --color-border: #e5e7eb;
+}
+
+* {
+  font-family: 'Cairo', sans-serif;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Mobile-first input styles */
+input[type="text"],
+input[type="password"],
+input[type="tel"],
+input[type="email"] {
+  font-size: 16px; /* prevents zoom on iOS */
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+/* OTP input styling */
+.otp-input {
+  width: 48px;
+  height: 56px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  outline: none;
+  transition: all 0.2s;
+  caret-color: var(--color-blue);
+}
+.otp-input:focus {
+  border-color: var(--color-blue);
+  box-shadow: 0 0 0 3px rgba(74, 108, 245, 0.15);
+}
+.otp-input.filled {
+  border-color: var(--color-blue);
+  background-color: #f0f4ff;
+}
