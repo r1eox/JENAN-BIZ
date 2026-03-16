@@ -3,6 +3,8 @@ import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
+  // Use /JENAN-BIZ/ base when building for GitHub Pages, / for local dev
+  base: process.env.GITHUB_ACTIONS ? '/JENAN-BIZ/' : '/',
   plugins: [
     vue(),
     tailwindcss(),

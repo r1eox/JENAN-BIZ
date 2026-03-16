@@ -22,6 +22,22 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <title>جنان بز - نظام إدارة الأعمال</title>
+    <script>
+      // Handle GitHub Pages SPA redirect
+      (function() {
+        var redirect = sessionStorage.redirect;
+        delete sessionStorage.redirect;
+        if (redirect && redirect !== location.href) {
+          history.replaceState(null, null, redirect);
+        }
+        // Also handle ?p= param from 404.html
+        var p = window.location.search.slice(1);
+        if (p && p.startsWith('p=')) {
+          var path = decodeURIComponent(p.slice(2));
+          history.replaceState(null, null, '/' + path);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>
