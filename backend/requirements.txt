@@ -26,10 +26,6 @@ python-multipart==0.0.18
 # Excel parsing
 openpyxl==3.1.5
 
-# Data analysis
-pandas==2.2.3
-numpy==2.2.1
-
 # Validation
 pydantic==2.10.4
 pydantic-settings==2.7.1
