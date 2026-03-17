@@ -15,7 +15,12 @@ _engine_kwargs: dict = {
     "echo": settings.DEBUG,
 }
 if not _is_sqlite:
-    _engine_kwargs.update(pool_size=10, max_overflow=20, pool_pre_ping=True)
+    _engine_kwargs.update(
+        pool_size=10,
+        max_overflow=20,
+        pool_pre_ping=True,
+        connect_args={"ssl": "require"},
+    )
 
 engine = create_async_engine(settings.DATABASE_URL, **_engine_kwargs)
 
