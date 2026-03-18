@@ -143,42 +143,102 @@
             </svg>
             <p class="text-sm text-danger">{{ crError }}</p>
           </div>
+
+          <!-- Manual entry fallback -->
+          <div v-if="!crFile && !crAnalyzing" class="mt-3 text-center">
+            <span class="text-xs text-text-light">أو</span>
+            <button
+              @click="startManualEntry"
+              :disabled="manualEntryLoading"
+              class="block w-full mt-2 py-2.5 rounded-xl border-2 border-border text-sm font-bold text-text-light hover:border-blue hover:text-blue active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
+            >
+              <span v-if="!manualEntryLoading">إدخال البيانات يدوياً</span>
+              <span v-else class="flex items-center justify-center gap-2">
+                <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                جاري الإنشاء...
+              </span>
+            </button>
+          </div>
         </div>
 
-        <!-- CR Analysis Result -->
-        <div v-if="crParsed && crData" class="bg-white rounded-2xl border border-border p-5 space-y-3">
+        <!-- CR Manual Data Form -->
+        <div v-if="crParsed" class="bg-white rounded-2xl border border-border p-5 space-y-4">
           <h3 class="text-base font-bold text-brand flex items-center gap-2">
-            <svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            <svg class="w-5 h-5 text-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
             </svg>
-            نتائج التحليل
+            بيانات السجل التجاري
+            <span class="text-xs text-text-light font-normal mr-1">(تحقق وعدّل إن لزم)</span>
           </h3>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div class="bg-bg rounded-xl p-3">
-              <p class="text-xs text-text-light">اسم المنشأة</p>
-              <p class="text-sm font-bold text-brand mt-0.5">{{ crData.companyName }}</p>
-            </div>
-            <div class="bg-bg rounded-xl p-3">
-              <p class="text-xs text-text-light">رقم السجل</p>
-              <p class="text-sm font-bold text-brand mt-0.5 dir-ltr" dir="ltr">{{ crData.registrationNumber }}</p>
-            </div>
-            <div class="bg-bg rounded-xl p-3">
-              <p class="text-xs text-text-light">نوع الكيان</p>
-              <p class="text-sm font-bold text-brand mt-0.5">{{ crData.entityType }}</p>
-            </div>
-            <div class="bg-bg rounded-xl p-3">
-              <p class="text-xs text-text-light">تاريخ الإصدار</p>
-              <p class="text-sm font-bold text-brand mt-0.5" dir="ltr">{{ crData.issueDate }}</p>
-            </div>
-            <div class="bg-bg rounded-xl p-3 col-span-2">
-              <p class="text-xs text-text-light">عمر المنشأة</p>
-              <p class="text-sm font-bold mt-0.5" :class="crData.isEligible ? 'text-success' : 'text-danger'">
-                {{ crData.ageInMonths }} {{ crData.ageInMonths <= 2 ? 'شهر' : crData.ageInMonths <= 10 ? 'أشهر' : 'شهر' }}
-                <span class="font-normal text-xs mr-1">{{ crData.isEligible ? '— مؤهل' : '— غير مؤهل (أقل من 6 أشهر)' }}</span>
-              </p>
-            </div>
+          <!-- Company Name -->
+          <div>
+            <label class="block text-xs text-text-light mb-1.5">اسم المنشأة</label>
+            <input
+              v-model="manualForm.companyName"
+              type="text"
+              placeholder="مثال: مؤسسة النور للتجارة"
+              class="w-full bg-bg border border-border rounded-xl px-4 py-2.5 text-sm text-brand font-medium focus:outline-none focus:border-blue transition-colors"
+            />
           </div>
+
+          <!-- Registration Number -->
+          <div>
+            <label class="block text-xs text-text-light mb-1.5">رقم السجل التجاري</label>
+            <input
+              v-model="manualForm.registrationNumber"
+              type="text"
+              dir="ltr"
+              placeholder="1010XXXXXX"
+              class="w-full bg-bg border border-border rounded-xl px-4 py-2.5 text-sm text-brand font-medium focus:outline-none focus:border-blue transition-colors text-left"
+            />
+          </div>
+
+          <!-- Entity Type -->
+          <div>
+            <label class="block text-xs text-text-light mb-1.5">نوع الكيان</label>
+            <select
+              v-model="manualForm.entityType"
+              class="w-full bg-bg border border-border rounded-xl px-4 py-2.5 text-sm text-brand font-medium focus:outline-none focus:border-blue transition-colors cursor-pointer"
+            >
+              <option value="مؤسسة فردية">مؤسسة فردية</option>
+              <option value="شركة شخص واحد">شركة شخص واحد</option>
+              <option value="شركة ذات مسؤولية محدودة">شركة ذات مسؤولية محدودة</option>
+              <option value="شركة مساهمة">شركة مساهمة</option>
+              <option value="شركة تضامن">شركة تضامن</option>
+            </select>
+          </div>
+
+          <!-- Issue Date -->
+          <div>
+            <label class="block text-xs text-text-light mb-1.5">تاريخ إصدار السجل</label>
+            <input
+              v-model="manualForm.issueDate"
+              type="date"
+              dir="ltr"
+              class="w-full bg-bg border border-border rounded-xl px-4 py-2.5 text-sm text-brand font-medium focus:outline-none focus:border-blue transition-colors"
+            />
+          </div>
+
+          <!-- Live eligibility preview -->
+          <div v-if="manualForm.issueDate" class="rounded-xl p-3 border"
+               :class="liveEligible ? 'bg-success/5 border-success/25' : 'bg-danger/5 border-danger/20'">
+            <p class="text-sm font-bold" :class="liveEligible ? 'text-success' : 'text-danger'">
+              عمر المنشأة: {{ liveAge }} شهر
+              <span class="font-normal text-xs mr-1">
+                {{ liveEligible ? '— مؤهل للتمويل' : '— غير مؤهل (يشترط 6 أشهر على الأقل)' }}
+              </span>
+            </p>
+          </div>
+
+          <!-- Confirm button -->
+          <button
+            @click="confirmManualData"
+            :disabled="!manualForm.issueDate"
+            class="w-full py-3 rounded-xl bg-blue text-white font-bold shadow-md shadow-blue/20 hover:bg-blue-dark active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            تأكيد البيانات
+          </button>
         </div>
 
         <!-- Navigation -->
@@ -603,7 +663,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { calculateAgeInMonths, getRequiredStatementMonths } from '../../utils/crAnalyzer'
 import { analysisApi } from '../../api/client'
@@ -664,6 +724,7 @@ const crAnalyzing = ref(false)
 const crProgress = ref(0)
 const crError = ref('')
 const crParsed = ref(false)
+const manualEntryLoading = ref(false)
 interface CRData {
   companyName: string
   registrationNumber: string
@@ -676,6 +737,51 @@ interface CRData {
 }
 
 const crData = ref<CRData | null>(null)
+
+// ---- Manual CR form (editable, always shown after upload) ----
+const manualForm = ref({
+  companyName: '',
+  registrationNumber: '',
+  entityType: 'مؤسسة فردية' as EntityType,
+  issueDate: '',
+})
+
+const liveAge = computed(() => {
+  if (!manualForm.value.issueDate) return 0
+  return calculateAgeInMonths(manualForm.value.issueDate)
+})
+
+const liveEligible = computed(() => {
+  if (!manualForm.value.issueDate) return false
+  const { isEligible } = getRequiredStatementMonths(liveAge.value)
+  return isEligible
+})
+
+function confirmManualData() {
+  const ageInMonths = liveAge.value
+  const { isEligible, requiredMonths, message } = getRequiredStatementMonths(ageInMonths)
+  crData.value = {
+    companyName: manualForm.value.companyName,
+    registrationNumber: manualForm.value.registrationNumber,
+    entityType: manualForm.value.entityType,
+    issueDate: manualForm.value.issueDate,
+    ageInMonths,
+    isEligible,
+    requiredStatementMonths: requiredMonths,
+    eligibilityMessage: message,
+  }
+  // Sync to backend
+  if (caseId.value) {
+    analysisApi.updateCRInfo(caseId.value, {
+      company_name: crData.value.companyName,
+      registration_number: crData.value.registrationNumber,
+      entity_type: crData.value.entityType,
+      issue_date: crData.value.issueDate,
+      age_in_months: ageInMonths,
+      activity: '',
+    }).catch(() => {})
+  }
+}
 
 // ---- Step 3: Questions + Pre-filter ----
 const questions = ref({
@@ -760,6 +866,7 @@ function removeCRFile() {
   crProgress.value = 0
   caseId.value = ''
   caseDisplayId.value = ''
+  manualForm.value = { companyName: '', registrationNumber: '', entityType: 'مؤسسة فردية', issueDate: '' }
   if (crInput.value) crInput.value.value = ''
 }
 
@@ -838,9 +945,20 @@ async function startCRAnalysis(file: File) {
     })
 
     crProgress.value = 100
+    // Populate manual form with AI results
+    manualForm.value = {
+      companyName: crData.value?.companyName || '',
+      registrationNumber: crData.value?.registrationNumber || '',
+      entityType: (crData.value?.entityType || 'مؤسسة فردية') as EntityType,
+      issueDate: crData.value?.issueDate || '',
+    }
     crParsed.value = true
   } catch (err: any) {
-    crError.value = err.message || 'خطأ أثناء رفع وتحليل السجل التجاري بالذكاء الاصطناعي'
+    crError.value = err.message || 'خطأ أثناء رفع السجل التجاري. يمكنك إدخال البيانات يدوياً.'
+    // If file was uploaded (we have a case ID), show manual form anyway
+    if (caseId.value) {
+      crParsed.value = true
+    }
   }
 
   crAnalyzing.value = false
@@ -848,6 +966,22 @@ async function startCRAnalysis(file: File) {
 
 function finishNotEligible() {
   router.push('/partner')
+}
+
+async function startManualEntry() {
+  if (!selectedFacilityType.value) return
+  manualEntryLoading.value = true
+  crError.value = ''
+  try {
+    const result = await analysisApi.createManualCase(selectedFacilityType.value)
+    caseId.value = result.case_id
+    caseDisplayId.value = result.display_id
+    manualForm.value = { companyName: '', registrationNumber: '', entityType: 'مؤسسة فردية', issueDate: '' }
+    crParsed.value = true
+  } catch (err: any) {
+    crError.value = err.message || 'خطأ في إنشاء الطلب'
+  }
+  manualEntryLoading.value = false
 }
 
 // ---- Pre-filter ----
@@ -1012,6 +1146,7 @@ function retryWizard() {
   isEligible.value = false
   resultSummary.value = ''
   requiredDocs.value = []
+  manualForm.value = { companyName: '', registrationNumber: '', entityType: 'مؤسسة فردية', issueDate: '' }
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
 }
 </script>

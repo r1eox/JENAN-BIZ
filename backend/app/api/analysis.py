@@ -114,6 +114,60 @@ def _generate_display_id() -> str:
     return f"JBZ-{random.randint(10000, 99999)}"
 
 
+# ─── Create new case manually (no CR file) ────────────
+
+@router.post("/create-manual", status_code=201)
+async def create_manual_case(
+    facility_type: str = "pos",
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a new case without uploading a CR file (manual data entry)."""
+    if current_user.role != UserRole.partner:
+        raise HTTPException(403, "فقط الشركاء يمكنهم إنشاء الطلبات")
+    if facility_type not in ("pos", "cash", "fleet"):
+        raise HTTPException(422, "نوع التسهيلات غير صالح")
+
+    case = Case(
+        display_id=_generate_display_id(),
+        partner_id=current_user.id,
+        facility_type=facility_type,
+        stage=CaseStage.analyzing,
+    )
+    db.add(case)
+    await db.flush()
+
+    history = CaseStageHistory(
+        case_id=case.id,
+        stage=CaseStage.analyzing,
+        updated_by=current_user.id,
+        updated_by_role=current_user.role.value,
+        updated_by_name=current_user.name,
+        note="تم إنشاء الطلب بالإدخال اليدوي",
+    )
+    db.add(history)
+
+    audit = AuditLog(
+        user_id=current_user.id,
+        user_name=current_user.name,
+        user_role=current_user.role.value,
+        action=AuditAction.case_created,
+        case_id=case.id,
+        details={"manual": True},
+    )
+    db.add(audit)
+
+    await db.commit()
+    await db.refresh(case)
+
+    return {
+        "case_id": str(case.id),
+        "display_id": case.display_id,
+        "stage": case.stage.value,
+        "message": "تم إنشاء الطلب بالإدخال اليدوي",
+    }
+
+
 # ─── Create new case + upload CR ──────────────────────
 
 @router.post("/upload-cr", status_code=201)

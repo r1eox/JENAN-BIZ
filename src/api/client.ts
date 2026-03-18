@@ -332,6 +332,10 @@ export const casesApi = {
 // ─── Analysis API ─────────────────────────────────────
 
 export const analysisApi = {
+  async createManualCase(facilityType: string): Promise<{ case_id: string; display_id: string }> {
+    return request('POST', `/analysis/create-manual?facility_type=${encodeURIComponent(facilityType)}`)
+  },
+
   async uploadCR(file: File, facilityType: string): Promise<{ case_id: string; display_id: string; ai_extracted?: Record<string, string> }> {
     const formData = new FormData()
     formData.append('file', file)
