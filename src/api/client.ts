@@ -110,6 +110,7 @@ async function _refreshAccessToken(): Promise<boolean> {
 
     if (!res.ok) {
       clearTokens()
+      window.location.href = '/JENAN-BIZ/login'
       return false
     }
 
@@ -118,6 +119,7 @@ async function _refreshAccessToken(): Promise<boolean> {
     return true
   } catch {
     clearTokens()
+    window.location.href = '/JENAN-BIZ/login'
     return false
   }
 }
