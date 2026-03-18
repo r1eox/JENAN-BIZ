@@ -125,11 +125,11 @@
             </div>
           </div>
 
-          <!-- CR Analysis Progress -->
+          <!-- CR Upload Progress -->
           <div v-if="crAnalyzing" class="mt-4">
             <div class="flex items-center gap-2 mb-2">
               <svg class="animate-spin w-4 h-4 text-blue" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-              <span class="text-sm text-blue font-medium">جاري تحليل السجل التجاري...</span>
+              <span class="text-sm text-blue font-medium">جاري رفع الملف...</span>
             </div>
             <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
               <div class="h-full bg-blue rounded-full transition-all duration-300" :style="{ width: crProgress + '%' }"></div>
