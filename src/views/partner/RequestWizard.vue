@@ -859,25 +859,19 @@ function handleCRDrop(e: DragEvent) {
 
 function removeCRFile() {
   crFile.value = null
-  crParsed.value = false
-  crData.value = null
   crError.value = ''
   crProgress.value = 0
   caseId.value = ''
   caseDisplayId.value = ''
-  manualForm.value = { companyName: '', registrationNumber: '', entityType: 'مؤسسة فردية', issueDate: '' }
   if (crInput.value) crInput.value.value = ''
 }
 
 async function startCRAnalysis(file: File) {
   crFile.value = file
   crError.value = ''
-  crParsed.value = false
-  crData.value = null
   crAnalyzing.value = true
   crProgress.value = 0
 
-  // ── Validate file type & size locally before uploading
   const validExt = /\.(pdf|jpe?g|png|webp|heic)$/i.test(file.name)
   const validMime = ['application/pdf','image/jpeg','image/png','image/webp','image/heic'].includes(file.type)
   if (!validMime && !validExt) {
@@ -891,29 +885,18 @@ async function startCRAnalysis(file: File) {
     return
   }
 
-  crProgress.value = 15
-
+  crProgress.value = 40
   try {
-    // ── Step 1: Upload file → backend calls GPT-4o Vision automatically
-    crProgress.value = 30
     const uploadResult = await analysisApi.uploadCR(file, selectedFacilityType.value!)
     caseId.value = uploadResult.case_id
     caseDisplayId.value = uploadResult.display_id
-    crProgress.value = 70
+    crProgress.value = 100
+  } catch (err: any) {
+    crError.value = err.message || 'خطأ أثناء رفع الملف. يمكنك تعبئة البيانات يدوياً.'
+  }
 
-    // ── Step 2: Use AI-extracted data returned from upload
-    let aiData: Record<string, string> = uploadResult.ai_extracted || {}
-
-    // If upload response didn't include ai_extracted (e.g. first request completed before AI)
-    // call the dedicated AI endpoint
-    if (!aiData.issue_date && !aiData.company_name) {
-      try {
-        const aiResult = await analysisApi.aiAnalyzeCR(uploadResult.case_id)
-        aiData = aiResult.ai_extracted || {}
-      } catch {
-        // AI failed — will show empty fields, user can correct manually
-      }
-    }
+  crAnalyzing.value = false
+}
 
     crProgress.value = 90
 
