@@ -143,26 +143,10 @@
             </svg>
             <p class="text-sm text-danger">{{ crError }}</p>
           </div>
-
-          <!-- Manual entry fallback -->
-          <div v-if="!crFile && !crAnalyzing" class="mt-3 text-center">
-            <span class="text-xs text-text-light">أو</span>
-            <button
-              @click="startManualEntry"
-              :disabled="manualEntryLoading"
-              class="block w-full mt-2 py-2.5 rounded-xl border-2 border-border text-sm font-bold text-text-light hover:border-blue hover:text-blue active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
-            >
-              <span v-if="!manualEntryLoading">إدخال البيانات يدوياً</span>
-              <span v-else class="flex items-center justify-center gap-2">
-                <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                جاري الإنشاء...
-              </span>
-            </button>
-          </div>
         </div>
 
-        <!-- CR Manual Data Form -->
-        <div v-if="crParsed" class="bg-white rounded-2xl border border-border p-5 space-y-4">
+        <!-- CR Manual Data Form — always visible -->
+        <div class="bg-white rounded-2xl border border-border p-5 space-y-4">
           <h3 class="text-base font-bold text-brand flex items-center gap-2">
             <svg class="w-5 h-5 text-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -250,14 +234,14 @@
             السابق
           </button>
           <button
-            v-if="crParsed && crData?.isEligible"
+            v-if="crData?.isEligible"
             @click="step = 3"
             class="flex-1 py-3.5 rounded-xl bg-blue text-white font-bold shadow-lg shadow-blue/25 hover:bg-blue-dark active:scale-[0.98] transition-all cursor-pointer"
           >
             التالي — الأسئلة الإلزامية
           </button>
           <button
-            v-if="crParsed && crData && !crData.isEligible"
+            v-if="crData && !crData.isEligible"
             @click="finishNotEligible"
             class="flex-1 py-3.5 rounded-xl bg-white text-brand font-bold border-2 border-border hover:border-blue active:scale-[0.98] transition-all cursor-pointer"
           >
@@ -757,7 +741,7 @@ const liveEligible = computed(() => {
   return isEligible
 })
 
-function confirmManualData() {
+async function confirmManualData() {
   const ageInMonths = liveAge.value
   const { isEligible, requiredMonths, message } = getRequiredStatementMonths(ageInMonths)
   crData.value = {
@@ -769,6 +753,21 @@ function confirmManualData() {
     isEligible,
     requiredStatementMonths: requiredMonths,
     eligibilityMessage: message,
+  }
+  // Create case if not created yet (manual mode, no file uploaded)
+  if (!caseId.value && selectedFacilityType.value) {
+    try {
+      manualEntryLoading.value = true
+      const result = await analysisApi.createManualCase(selectedFacilityType.value)
+      caseId.value = result.case_id
+      caseDisplayId.value = result.display_id
+    } catch (err: any) {
+      crError.value = err.message || 'خطأ في إنشاء الطلب'
+      crData.value = null
+      manualEntryLoading.value = false
+      return
+    }
+    manualEntryLoading.value = false
   }
   // Sync to backend
   if (caseId.value) {
@@ -968,21 +967,7 @@ function finishNotEligible() {
   router.push('/partner')
 }
 
-async function startManualEntry() {
-  if (!selectedFacilityType.value) return
-  manualEntryLoading.value = true
-  crError.value = ''
-  try {
-    const result = await analysisApi.createManualCase(selectedFacilityType.value)
-    caseId.value = result.case_id
-    caseDisplayId.value = result.display_id
-    manualForm.value = { companyName: '', registrationNumber: '', entityType: 'مؤسسة فردية', issueDate: '' }
-    crParsed.value = true
-  } catch (err: any) {
-    crError.value = err.message || 'خطأ في إنشاء الطلب'
-  }
-  manualEntryLoading.value = false
-}
+
 
 // ---- Pre-filter ----
 async function runPreFilter() {
