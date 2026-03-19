@@ -253,28 +253,62 @@
       <!-- ============ STEP 3: Financial Data ============ -->
       <div v-if="step === 3" class="space-y-4">
         <div class="bg-white rounded-2xl border border-border p-5 space-y-5">
-          <h2 class="text-lg font-bold text-brand mb-1">البيانات المالية</h2>
-          <p class="text-sm text-text-light">أدخل متوسط المبالغ الشهرية للمنشأة</p>
-
           <div>
-            <label class="block text-xs text-text-light mb-1.5">متوسط المدخول الشهري (ريال)</label>
+            <h2 class="text-lg font-bold text-brand mb-1">البيانات المالية</h2>
+            <p class="text-sm text-text-light">أدخل الأرقام من كشف الحساب البنكي للمنشأة</p>
+          </div>
+
+          <!-- مجموع الدائن -->
+          <div>
+            <label class="block text-sm font-bold text-brand mb-1.5">مجموع الدائن (ريال) <span class="text-danger">*</span></label>
+            <p class="text-xs text-text-light mb-2">إجمالي المبالغ الواردة للحساب البنكي</p>
             <input
-              v-model.number="monthlyIncome"
+              v-model.number="totalCredit"
               type="number"
               min="0"
-              placeholder="مثال: 50000"
+              placeholder="مثال: 250000"
               dir="ltr"
               class="w-full bg-bg border border-border rounded-xl px-4 py-2.5 text-sm text-brand font-medium focus:outline-none focus:border-blue transition-colors text-left"
             />
           </div>
 
-          <div v-if="selectedFacilityType === 'pos' || selectedFacilityType === 'cash'">
-            <label class="block text-xs text-text-light mb-1.5">متوسط مبيعات نقاط البيع الشهرية (ريال)</label>
+          <!-- مجموع المدين -->
+          <div>
+            <label class="block text-sm font-bold text-brand mb-1.5">مجموع المدين (ريال) <span class="text-danger">*</span></label>
+            <p class="text-xs text-text-light mb-2">إجمالي المبالغ الصادرة من الحساب البنكي</p>
             <input
-              v-model.number="monthlyPosSales"
+              v-model.number="totalDebit"
               type="number"
               min="0"
-              placeholder="مثال: 30000"
+              placeholder="مثال: 200000"
+              dir="ltr"
+              class="w-full bg-bg border border-border rounded-xl px-4 py-2.5 text-sm text-brand font-medium focus:outline-none focus:border-blue transition-colors text-left"
+            />
+          </div>
+
+          <!-- مبيعات نقاط البيع -->
+          <div>
+            <label class="block text-sm font-bold text-brand mb-1.5">مبيعات نقاط البيع POS (ريال)</label>
+            <p class="text-xs text-text-light mb-2">إجمالي مبيعات الـ POS (0 إذا لا يوجد)</p>
+            <input
+              v-model.number="posSales"
+              type="number"
+              min="0"
+              placeholder="مثال: 80000"
+              dir="ltr"
+              class="w-full bg-bg border border-border rounded-xl px-4 py-2.5 text-sm text-brand font-medium focus:outline-none focus:border-blue transition-colors text-left"
+            />
+          </div>
+
+          <!-- إيرادات أخرى -->
+          <div>
+            <label class="block text-sm font-bold text-brand mb-1.5">إيرادات أخرى (ريال)</label>
+            <p class="text-xs text-text-light mb-2">أي إيرادات إضافية غير مشمولة في الأعلى (اختياري)</p>
+            <input
+              v-model.number="otherIncome"
+              type="number"
+              min="0"
+              placeholder="مثال: 10000"
               dir="ltr"
               class="w-full bg-bg border border-border rounded-xl px-4 py-2.5 text-sm text-brand font-medium focus:outline-none focus:border-blue transition-colors text-left"
             />
@@ -289,7 +323,7 @@
           <button @click="step = 2" class="flex-1 py-3 rounded-xl bg-white text-brand font-bold border-2 border-border hover:border-blue active:scale-[0.98] transition-all cursor-pointer">السابق</button>
           <button
             @click="goToQuestions"
-            :disabled="!monthlyIncome"
+            :disabled="!totalCredit || !totalDebit"
             class="flex-1 py-3.5 rounded-xl bg-blue text-white font-bold shadow-lg shadow-blue/25 hover:bg-blue-dark active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             التالي — الأسئلة الإلزامية
@@ -822,8 +856,10 @@ async function confirmManualData() {
 }
 
 // ---- Step 3: Financial data ----
-const monthlyIncome = ref<number | null>(null)
-const monthlyPosSales = ref<number | null>(null)
+const totalCredit = ref<number | null>(null)
+const totalDebit = ref<number | null>(null)
+const posSales = ref<number | null>(null)
+const otherIncome = ref<number | null>(null)
 const financialSaved = ref(false)
 const financialError = ref('')
 
@@ -832,8 +868,10 @@ async function saveFinancialData() {
   financialError.value = ''
   try {
     await analysisApi.saveFinancial(caseId.value, {
-      monthly_income: monthlyIncome.value || 0,
-      monthly_pos_sales: monthlyPosSales.value || 0,
+      total_credit: totalCredit.value || 0,
+      total_debit: totalDebit.value || 0,
+      pos_sales: posSales.value || 0,
+      other_income: otherIncome.value || 0,
     })
     financialSaved.value = true
   } catch (err: any) {
@@ -1131,8 +1169,10 @@ function retryWizard() {
   resultSummary.value = ''
   requiredDocs.value = []
   manualForm.value = { companyName: '', registrationNumber: '', entityType: 'مؤسسة فردية', issueDate: '' }
-  monthlyIncome.value = null
-  monthlyPosSales.value = null
+  totalCredit.value = null
+  totalDebit.value = null
+  posSales.value = null
+  otherIncome.value = null
   financialSaved.value = false
   financialError.value = ''
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null }

@@ -280,12 +280,14 @@ async def update_cr_info(
 @router.patch("/{case_id}/financial")
 async def save_financial_data(
     case_id: uuid.UUID,
-    monthly_income: float = 0.0,
-    monthly_pos_sales: float = 0.0,
+    total_credit: float = 0.0,
+    total_debit: float = 0.0,
+    pos_sales: float = 0.0,
+    other_income: float = 0.0,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Save partner-entered financial data (income, POS sales) into analysis_result JSON."""
+    """Save partner-entered financial data into analysis_result JSON."""
     result = await db.execute(select(Case).where(Case.id == case_id))
     case = result.scalar_one_or_none()
     if not case:
@@ -294,8 +296,10 @@ async def save_financial_data(
         raise HTTPException(403, "ليس لديك صلاحية")
 
     existing = dict(case.analysis_result or {})
-    existing["monthly_income"] = monthly_income
-    existing["monthly_pos_sales"] = monthly_pos_sales
+    existing["total_credit"] = total_credit
+    existing["total_debit"] = total_debit
+    existing["pos_sales"] = pos_sales
+    existing["other_income"] = other_income
     case.analysis_result = existing
     await db.commit()
     return {"status": "ok"}

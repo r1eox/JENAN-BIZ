@@ -377,12 +377,16 @@ export const analysisApi = {
   },
 
   async saveFinancial(caseId: string, data: {
-    monthly_income: number
-    monthly_pos_sales: number
+    total_credit: number
+    total_debit: number
+    pos_sales: number
+    other_income: number
   }): Promise<void> {
     const params = new URLSearchParams()
-    params.set('monthly_income', String(data.monthly_income))
-    params.set('monthly_pos_sales', String(data.monthly_pos_sales))
+    params.set('total_credit', String(data.total_credit))
+    params.set('total_debit', String(data.total_debit))
+    params.set('pos_sales', String(data.pos_sales))
+    params.set('other_income', String(data.other_income))
     return request('PATCH', `/analysis/${caseId}/financial?${params}`)
   },
 
