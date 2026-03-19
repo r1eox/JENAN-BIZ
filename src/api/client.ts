@@ -381,7 +381,7 @@ export const analysisApi = {
     formData.append('file', file)
     const params = new URLSearchParams()
     params.set('doc_name', docName)
-    return request('POST', `/analysis/${caseId}/upload-basic-doc?${params}`, formData)
+    return request('POST', `/analysis/${caseId}/upload-basic-doc?${params}`, formData, { isFormData: true })
   },
 
   async saveFinancial(caseId: string, data: {

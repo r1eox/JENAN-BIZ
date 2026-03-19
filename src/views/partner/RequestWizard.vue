@@ -919,7 +919,8 @@ async function handleBasicDocSelect(idx: number, event: Event) {
     await analysisApi.uploadBasicDoc(caseId.value, basicDocs.value[idx].name, file)
     basicDocs.value[idx].uploaded = true
   } catch (err: any) {
-    basicDocs.value[idx].error = err.message || 'خطأ في الرفع'
+    const msg = typeof err.message === 'string' && !err.message.includes('Object') ? err.message : 'خطأ في رفع الملف، حاول مرة أخرى'
+    basicDocs.value[idx].error = msg
   } finally {
     basicDocs.value[idx].uploading = false
   }
