@@ -142,6 +142,20 @@
           </div>
           <p v-if="!caseData.cr_file_name && !caseData.bs_file_name" class="text-xs text-text-light">لا توجد ملفات مرفقة</p>
 
+          <!-- Basic docs uploaded in step 6 -->
+          <template v-if="Object.keys(caseData.analysis_result?.basic_docs || {}).length > 0">
+            <p class="text-xs font-bold text-brand mt-3 mb-1.5">المستندات الأساسية</p>
+            <div v-for="(filename, docName) in (caseData.analysis_result?.basic_docs || {})" :key="docName"
+              class="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-2.5">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span class="text-xs text-brand font-medium">{{ docName }}</span>
+              </div>
+            </div>
+          </template>
+
           <!-- Supplementary docs from partner completion -->
           <template v-if="(caseData.supplementary_docs || []).length > 0">
             <p class="text-xs font-bold text-brand mt-3 mb-1.5">مستندات الاستكمال ({{ (caseData.supplementary_docs || []).length }})</p>
