@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime
 
 import aiofiles
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Query
 from fastapi.responses import FileResponse
 from loguru import logger
 from pydantic import BaseModel
@@ -280,7 +280,7 @@ async def update_cr_info(
 @router.post("/{case_id}/upload-basic-doc")
 async def upload_basic_doc(
     case_id: uuid.UUID,
-    doc_name: str,
+    doc_name: str = Query(...),
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
