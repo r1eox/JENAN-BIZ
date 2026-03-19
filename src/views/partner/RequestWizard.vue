@@ -577,7 +577,7 @@
               />
               <div class="flex-1 py-2 px-3 rounded-lg text-xs border-2 text-center"
                    :class="doc.uploaded ? 'border-success/40 bg-success/5 text-success' : 'border-dashed border-border bg-bg text-text-light hover:border-blue hover:text-blue transition-colors'">
-                {{ doc.file ? doc.file.name : 'اختر ملف (PDF أو صورة)' }}
+                {{ doc.fileName || 'اختر ملف (PDF أو صورة)' }}
               </div>
             </label>
           </div>
@@ -761,7 +761,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, markRaw } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { calculateAgeInMonths, getRequiredStatementMonths } from '../../utils/crAnalyzer'
 import { analysisApi } from '../../api/client'
@@ -900,9 +900,9 @@ async function confirmManualData() {
 
 // ---- Step 6: Basic Documents ----
 const basicDocs = ref([
-  { name: 'صورة الهوية الوطنية / الإقامة', file: null as File | null, uploaded: false, uploading: false, error: '' },
-  { name: 'العنوان الوطني للمنشأة والملاك', file: null as File | null, uploaded: false, uploading: false, error: '' },
-  { name: 'شهادة الآيبان بالباركود', file: null as File | null, uploaded: false, uploading: false, error: '' },
+  { name: 'صورة الهوية الوطنية / الإقامة', file: null as File | null, fileName: '', uploaded: false, uploading: false, error: '' },
+  { name: 'العنوان الوطني للمنشأة والملاك', file: null as File | null, fileName: '', uploaded: false, uploading: false, error: '' },
+  { name: 'شهادة الآيبان بالباركود', file: null as File | null, fileName: '', uploaded: false, uploading: false, error: '' },
 ])
 const basicDocsAllSelected = computed(() => basicDocs.value.every(d => d.file !== null))
 
@@ -910,7 +910,8 @@ async function handleBasicDocSelect(idx: number, event: Event) {
   const input = event.target as HTMLInputElement
   const file = input?.files?.[0]
   if (!file) return
-  basicDocs.value[idx].file = file
+  basicDocs.value[idx].file = markRaw(file)
+  basicDocs.value[idx].fileName = file.name
   basicDocs.value[idx].error = ''
   if (!caseId.value) return
   basicDocs.value[idx].uploading = true
@@ -1242,7 +1243,7 @@ function retryWizard() {
   totalDebit.value = null
   posSales.value = null
   otherIncome.value = null
-  basicDocs.value.forEach(d => { d.file = null; d.uploaded = false; d.uploading = false; d.error = '' })
+  basicDocs.value.forEach(d => { d.file = null; d.fileName = ''; d.uploaded = false; d.uploading = false; d.error = '' })
   financialSaved.value = false
   financialError.value = ''
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
