@@ -288,7 +288,7 @@
         <div class="flex gap-3 mt-4">
           <button @click="step = 2" class="flex-1 py-3 rounded-xl bg-white text-brand font-bold border-2 border-border hover:border-blue active:scale-[0.98] transition-all cursor-pointer">السابق</button>
           <button
-            @click="saveFinancialData().then(() => { if (!financialError) step = 4 })"
+            @click="goToQuestions"
             :disabled="!monthlyIncome"
             class="flex-1 py-3.5 rounded-xl bg-blue text-white font-bold shadow-lg shadow-blue/25 hover:bg-blue-dark active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -841,6 +841,11 @@ async function saveFinancialData() {
   }
 }
 
+async function goToQuestions() {
+  await saveFinancialData()
+  if (!financialError.value) step.value = 4
+}
+
 // ---- Step 4: Questions + Pre-filter ----
 const questions = ref({
   has_pos: null as boolean | null,
@@ -952,18 +957,6 @@ async function startCRAnalysis(file: File) {
     crProgress.value = 100
   } catch (err: any) {
     crError.value = err.message || 'خطأ أثناء رفع الملف. يمكنك تعبئة البيانات يدوياً.'
-  }
-
-  crAnalyzing.value = false
-}
-
-function finishNotEligible() {
-  router.push('/partner')
-}
-    // If file was uploaded (we have a case ID), show manual form anyway
-    if (caseId.value) {
-      crParsed.value = true
-    }
   }
 
   crAnalyzing.value = false
