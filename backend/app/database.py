@@ -2,6 +2,7 @@
 Jenan BIZ — Database Setup (async SQLAlchemy)
 """
 
+import ssl
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import event
@@ -15,11 +16,14 @@ _engine_kwargs: dict = {
     "echo": settings.DEBUG,
 }
 if not _is_sqlite:
+    _ssl_ctx = ssl.create_default_context()
+    _ssl_ctx.check_hostname = False
+    _ssl_ctx.verify_mode = ssl.CERT_NONE
     _engine_kwargs.update(
         pool_size=10,
         max_overflow=20,
         pool_pre_ping=True,
-        connect_args={"ssl": True},
+        connect_args={"ssl": _ssl_ctx, "statement_cache_size": 0},
     )
 
 engine = create_async_engine(settings.DATABASE_URL, **_engine_kwargs)
