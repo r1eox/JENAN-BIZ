@@ -275,6 +275,32 @@ async def update_cr_info(
     return {"status": "updated"}
 
 
+# ─── Save financial data ──────────────────────────────
+
+@router.patch("/{case_id}/financial")
+async def save_financial_data(
+    case_id: uuid.UUID,
+    monthly_income: float = 0.0,
+    monthly_pos_sales: float = 0.0,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Save partner-entered financial data (income, POS sales) into analysis_result JSON."""
+    result = await db.execute(select(Case).where(Case.id == case_id))
+    case = result.scalar_one_or_none()
+    if not case:
+        raise HTTPException(404, "الطلب غير موجود")
+    if current_user.role == UserRole.partner and case.partner_id != current_user.id:
+        raise HTTPException(403, "ليس لديك صلاحية")
+
+    existing = dict(case.analysis_result or {})
+    existing["monthly_income"] = monthly_income
+    existing["monthly_pos_sales"] = monthly_pos_sales
+    case.analysis_result = existing
+    await db.commit()
+    return {"status": "ok"}
+
+
 # ─── Update partner questions ─────────────────────────
 
 class QuestionsBody(BaseModel):

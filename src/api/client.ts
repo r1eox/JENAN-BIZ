@@ -376,6 +376,16 @@ export const analysisApi = {
     return request('PATCH', `/analysis/${caseId}/questions`, questions)
   },
 
+  async saveFinancial(caseId: string, data: {
+    monthly_income: number
+    monthly_pos_sales: number
+  }): Promise<void> {
+    const params = new URLSearchParams()
+    params.set('monthly_income', String(data.monthly_income))
+    params.set('monthly_pos_sales', String(data.monthly_pos_sales))
+    return request('PATCH', `/analysis/${caseId}/financial?${params}`)
+  },
+
   async preFilter(caseId: string): Promise<{
     case_id: string
     has_eligible: boolean

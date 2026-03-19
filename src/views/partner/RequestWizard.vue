@@ -238,7 +238,7 @@
             @click="step = 3"
             class="flex-1 py-3.5 rounded-xl bg-blue text-white font-bold shadow-lg shadow-blue/25 hover:bg-blue-dark active:scale-[0.98] transition-all cursor-pointer"
           >
-            التالي — الأسئلة الإلزامية
+            التالي — البيانات المالية
           </button>
           <button
             v-if="crData && !crData.isEligible"
@@ -250,8 +250,55 @@
         </div>
       </div>
 
-      <!-- ============ STEP 3: Mandatory Questions + Pre-filter ============ -->
+      <!-- ============ STEP 3: Financial Data ============ -->
       <div v-if="step === 3" class="space-y-4">
+        <div class="bg-white rounded-2xl border border-border p-5 space-y-5">
+          <h2 class="text-lg font-bold text-brand mb-1">البيانات المالية</h2>
+          <p class="text-sm text-text-light">أدخل متوسط المبالغ الشهرية للمنشأة</p>
+
+          <div>
+            <label class="block text-xs text-text-light mb-1.5">متوسط المدخول الشهري (ريال)</label>
+            <input
+              v-model.number="monthlyIncome"
+              type="number"
+              min="0"
+              placeholder="مثال: 50000"
+              dir="ltr"
+              class="w-full bg-bg border border-border rounded-xl px-4 py-2.5 text-sm text-brand font-medium focus:outline-none focus:border-blue transition-colors text-left"
+            />
+          </div>
+
+          <div v-if="selectedFacilityType === 'pos' || selectedFacilityType === 'cash'">
+            <label class="block text-xs text-text-light mb-1.5">متوسط مبيعات نقاط البيع الشهرية (ريال)</label>
+            <input
+              v-model.number="monthlyPosSales"
+              type="number"
+              min="0"
+              placeholder="مثال: 30000"
+              dir="ltr"
+              class="w-full bg-bg border border-border rounded-xl px-4 py-2.5 text-sm text-brand font-medium focus:outline-none focus:border-blue transition-colors text-left"
+            />
+          </div>
+
+          <div v-if="financialError" class="flex items-start gap-2 bg-danger/5 border border-danger/20 rounded-xl p-3">
+            <p class="text-sm text-danger">{{ financialError }}</p>
+          </div>
+        </div>
+
+        <div class="flex gap-3 mt-4">
+          <button @click="step = 2" class="flex-1 py-3 rounded-xl bg-white text-brand font-bold border-2 border-border hover:border-blue active:scale-[0.98] transition-all cursor-pointer">السابق</button>
+          <button
+            @click="saveFinancialData().then(() => { if (!financialError) step = 4 })"
+            :disabled="!monthlyIncome"
+            class="flex-1 py-3.5 rounded-xl bg-blue text-white font-bold shadow-lg shadow-blue/25 hover:bg-blue-dark active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            التالي — الأسئلة الإلزامية
+          </button>
+        </div>
+      </div>
+
+      <!-- ============ STEP 4: Mandatory Questions + Pre-filter ============ -->
+      <div v-if="step === 4" class="space-y-4">
         <div class="bg-white rounded-2xl border border-border p-5">
           <h2 class="text-lg font-bold text-brand mb-1">أسئلة إلزامية</h2>
           <p class="text-sm text-text-light mb-5">يرجى الإجابة على الأسئلة التالية لتحديد الأهلية المبدئية</p>
@@ -344,7 +391,7 @@
         <!-- Navigation -->
         <div class="flex gap-3 mt-4">
           <button
-            @click="step = 2"
+            @click="step = 3"
             class="flex-1 py-3 rounded-xl bg-white text-brand font-bold border-2 border-border hover:border-blue active:scale-[0.98] transition-all cursor-pointer"
           >
             السابق
@@ -359,7 +406,7 @@
           </button>
           <button
             v-if="preFilterDone && !preFilterResult?.rejected"
-            @click="step = 4"
+            @click="step = 5"
             class="flex-1 py-3.5 rounded-xl bg-blue text-white font-bold shadow-lg shadow-blue/25 hover:bg-blue-dark active:scale-[0.98] transition-all cursor-pointer"
           >
             التالي — رفع كشف الحساب
@@ -374,8 +421,8 @@
         </div>
       </div>
 
-      <!-- ============ STEP 4: Upload Bank Statement ============ -->
-      <div v-if="step === 4" class="space-y-4">
+      <!-- ============ STEP 5: Upload Bank Statement ============ -->
+      <div v-if="step === 5" class="space-y-4">
         <div class="bg-white rounded-2xl border border-border p-5">
           <h2 class="text-lg font-bold text-brand mb-1">رفع كشف الحساب البنكي</h2>
 
@@ -457,13 +504,13 @@
         <!-- Navigation -->
         <div class="flex gap-3 mt-4">
           <button
-            @click="step = 3"
+            @click="step = 4"
             class="flex-1 py-3 rounded-xl bg-white text-brand font-bold border-2 border-border hover:border-blue active:scale-[0.98] transition-all cursor-pointer"
           >
             السابق
           </button>
           <button
-            @click="step = 5"
+            @click="step = 6"
             :disabled="!bsUploaded || !!bsError"
             class="flex-1 py-3 rounded-xl bg-blue text-white font-bold shadow-lg shadow-blue/25 hover:bg-blue-dark active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -472,8 +519,8 @@
         </div>
       </div>
 
-      <!-- ============ STEP 5: Review & Submit ============ -->
-      <div v-if="step === 5" class="space-y-4">
+      <!-- ============ STEP 6: Review & Submit ============ -->
+      <div v-if="step === 6" class="space-y-4">
         <div class="bg-white rounded-2xl border border-border p-5">
           <h2 class="text-lg font-bold text-brand mb-4">مراجعة الطلب</h2>
 
@@ -548,7 +595,7 @@
         <!-- Submit buttons -->
         <div class="flex gap-3 mt-4">
           <button
-            @click="step = 4"
+            @click="step = 5"
             class="flex-1 py-3 rounded-xl bg-white text-brand font-bold border-2 border-border hover:border-blue active:scale-[0.98] transition-all cursor-pointer"
           >
             السابق
@@ -567,8 +614,8 @@
         </div>
       </div>
 
-      <!-- ============ STEP 6: Analysis Progress ============ -->
-      <div v-if="step === 6" class="space-y-4">
+      <!-- ============ STEP 7: Analysis Progress ============ -->
+      <div v-if="step === 7" class="space-y-4">
         <div class="bg-white rounded-2xl border border-border p-6 text-center">
           <!-- Analyzing state -->
           <div v-if="!analysisDone">
@@ -656,10 +703,11 @@ import type { FacilityType, EntityType } from '../../types/request'
 const router = useRouter()
 const route = useRoute()
 
-const totalSteps = 6
+const totalSteps = 7
 const stepLabels = [
   'نوع التسهيلات',
-  'رفع السجل التجاري',
+  'السجل التجاري',
+  'البيانات المالية',
   'الأسئلة الإلزامية',
   'رفع كشف الحساب',
   'المراجعة والإرسال',
@@ -782,7 +830,27 @@ async function confirmManualData() {
   }
 }
 
-// ---- Step 3: Questions + Pre-filter ----
+// ---- Step 3: Financial data ----
+const monthlyIncome = ref<number | null>(null)
+const monthlyPosSales = ref<number | null>(null)
+const financialSaved = ref(false)
+const financialError = ref('')
+
+async function saveFinancialData() {
+  if (!caseId.value) return
+  financialError.value = ''
+  try {
+    await analysisApi.saveFinancial(caseId.value, {
+      monthly_income: monthlyIncome.value || 0,
+      monthly_pos_sales: monthlyPosSales.value || 0,
+    })
+    financialSaved.value = true
+  } catch (err: any) {
+    financialError.value = err.message || 'خطأ في حفظ البيانات'
+  }
+}
+
+// ---- Step 4: Questions + Pre-filter ----
 const questions = ref({
   has_pos: null as boolean | null,
   partner_count: 1,
@@ -898,45 +966,9 @@ async function startCRAnalysis(file: File) {
   crAnalyzing.value = false
 }
 
-    crProgress.value = 90
-
-    // ── Step 3: Calculate eligibility from extracted issue_date
-    const issueDate = aiData.issue_date || ''
-    const ageInMonths = issueDate ? calculateAgeInMonths(issueDate) : 0
-    const { isEligible, requiredMonths, message } = getRequiredStatementMonths(ageInMonths)
-
-    crData.value = {
-      companyName: aiData.company_name || '',
-      registrationNumber: aiData.registration_number || '',
-      entityType: (aiData.entity_type || 'مؤسسة فردية') as EntityType,
-      issueDate,
-      ageInMonths,
-      isEligible,
-      requiredStatementMonths: requiredMonths,
-      eligibilityMessage: message,
-    }
-
-    // ── Step 4: Persist the extracted info to backend (age, entity_type, activity)
-    await analysisApi.updateCRInfo(uploadResult.case_id, {
-      company_name: crData.value.companyName,
-      registration_number: crData.value.registrationNumber,
-      entity_type: crData.value.entityType,
-      issue_date: issueDate,
-      age_in_months: ageInMonths,
-      activity: aiData.activity || '',
-    })
-
-    crProgress.value = 100
-    // Populate manual form with AI results
-    manualForm.value = {
-      companyName: crData.value?.companyName || '',
-      registrationNumber: crData.value?.registrationNumber || '',
-      entityType: (crData.value?.entityType || 'مؤسسة فردية') as EntityType,
-      issueDate: crData.value?.issueDate || '',
-    }
-    crParsed.value = true
-  } catch (err: any) {
-    crError.value = err.message || 'خطأ أثناء رفع السجل التجاري. يمكنك إدخال البيانات يدوياً.'
+function finishNotEligible() {
+  router.push('/partner')
+}
     // If file was uploaded (we have a case ID), show manual form anyway
     if (caseId.value) {
       crParsed.value = true
@@ -1040,7 +1072,7 @@ async function submitRequest() {
   // The BS upload already triggers analysis on the backend
   // Just move to analysis tracking step
   isSubmitting.value = false
-  step.value = 6
+  step.value = 7
 
   startPolling()
 }
@@ -1115,6 +1147,10 @@ function retryWizard() {
   resultSummary.value = ''
   requiredDocs.value = []
   manualForm.value = { companyName: '', registrationNumber: '', entityType: 'مؤسسة فردية', issueDate: '' }
+  monthlyIncome.value = null
+  monthlyPosSales.value = null
+  financialSaved.value = false
+  financialError.value = ''
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
 }
 </script>
