@@ -275,6 +275,35 @@ async def update_cr_info(
     return {"status": "updated"}
 
 
+# ─── Upload basic document ────────────────────────────
+
+@router.post("/{case_id}/upload-basic-doc")
+async def upload_basic_doc(
+    case_id: uuid.UUID,
+    doc_name: str,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upload a basic document file (ID, IBAN, national address, etc.)"""
+    result = await db.execute(select(Case).where(Case.id == case_id))
+    case = result.scalar_one_or_none()
+    if not case:
+        raise HTTPException(404, "الطلب غير موجود")
+    if current_user.role == UserRole.partner and case.partner_id != current_user.id:
+        raise HTTPException(403, "ليس لديك صلاحية")
+
+    _, filename = await _save_file(file, f"basic-docs/{case_id}")
+
+    existing = dict(case.analysis_result or {})
+    basic_docs = existing.get("basic_docs", {})
+    basic_docs[doc_name] = filename
+    existing["basic_docs"] = basic_docs
+    case.analysis_result = existing
+    await db.commit()
+    return {"status": "ok", "filename": filename}
+
+
 # ─── Save financial data ──────────────────────────────
 
 @router.patch("/{case_id}/financial")

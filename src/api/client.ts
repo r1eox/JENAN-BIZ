@@ -376,6 +376,14 @@ export const analysisApi = {
     return request('PATCH', `/analysis/${caseId}/questions`, questions)
   },
 
+  async uploadBasicDoc(caseId: string, docName: string, file: File): Promise<void> {
+    const formData = new FormData()
+    formData.append('file', file)
+    const params = new URLSearchParams()
+    params.set('doc_name', docName)
+    return request('POST', `/analysis/${caseId}/upload-basic-doc?${params}`, formData)
+  },
+
   async saveFinancial(caseId: string, data: {
     total_credit: number
     total_debit: number

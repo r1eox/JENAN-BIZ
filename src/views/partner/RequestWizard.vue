@@ -548,13 +548,55 @@
             :disabled="!bsUploaded || !!bsError"
             class="flex-1 py-3 rounded-xl bg-blue text-white font-bold shadow-lg shadow-blue/25 hover:bg-blue-dark active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
+            التالي — المستندات الأساسية
+          </button>
+        </div>
+      </div>
+
+      <!-- ============ STEP 6: Basic Documents ============ -->
+      <div v-if="step === 6" class="space-y-4">
+        <div class="bg-white rounded-2xl border border-border p-5 space-y-5">
+          <div>
+            <h2 class="text-lg font-bold text-brand mb-1">المستندات الأساسية</h2>
+            <p class="text-sm text-text-light">رفع المستندات التالية لإتمام الطلب</p>
+          </div>
+
+          <div v-for="(doc, i) in basicDocs" :key="i" class="border border-border rounded-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-sm font-bold text-brand">{{ doc.name }}</label>
+              <span v-if="doc.uploaded" class="text-xs text-success font-medium">✔ تم الرفع</span>
+              <span v-else-if="doc.uploading" class="text-xs text-blue">جاري…</span>
+            </div>
+            <div v-if="doc.error" class="text-xs text-danger mb-2">{{ doc.error }}</div>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                type="file"
+                accept=".pdf,.png,.jpg,.jpeg"
+                class="hidden"
+                @change="handleBasicDocSelect(i, $event)"
+              />
+              <div class="flex-1 py-2 px-3 rounded-lg text-xs border-2 text-center"
+                   :class="doc.uploaded ? 'border-success/40 bg-success/5 text-success' : 'border-dashed border-border bg-bg text-text-light hover:border-blue hover:text-blue transition-colors'">
+                {{ doc.file ? doc.file.name : 'اختر ملف (PDF أو صورة)' }}
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="flex gap-3 mt-4">
+          <button @click="step = 5" class="flex-1 py-3 rounded-xl bg-white text-brand font-bold border-2 border-border hover:border-blue active:scale-[0.98] transition-all cursor-pointer">السابق</button>
+          <button
+            @click="step = 7"
+            :disabled="!basicDocsAllSelected"
+            class="flex-1 py-3.5 rounded-xl bg-blue text-white font-bold shadow-lg shadow-blue/25 hover:bg-blue-dark active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             التالي — المراجعة
           </button>
         </div>
       </div>
 
-      <!-- ============ STEP 6: Review & Submit ============ -->
-      <div v-if="step === 6" class="space-y-4">
+      <!-- ============ STEP 7: Review & Submit ============ -->
+      <div v-if="step === 7" class="space-y-4">
         <div class="bg-white rounded-2xl border border-border p-5">
           <h2 class="text-lg font-bold text-brand mb-4">مراجعة الطلب</h2>
 
@@ -620,7 +662,7 @@
         <!-- Submit buttons -->
         <div class="flex gap-3 mt-4">
           <button
-            @click="step = 5"
+            @click="step = 6"
             class="flex-1 py-3 rounded-xl bg-white text-brand font-bold border-2 border-border hover:border-blue active:scale-[0.98] transition-all cursor-pointer"
           >
             السابق
@@ -639,8 +681,8 @@
         </div>
       </div>
 
-      <!-- ============ STEP 7: Analysis Progress ============ -->
-      <div v-if="step === 7" class="space-y-4">
+      <!-- ============ STEP 8: Analysis Progress / Result ============ -->
+      <div v-if="step === 8" class="space-y-4">
         <div class="bg-white rounded-2xl border border-border p-6 text-center">
           <!-- Analyzing state -->
           <div v-if="!analysisDone">
@@ -679,8 +721,8 @@
               </svg>
             </div>
 
-            <h2 class="text-lg font-bold text-brand mb-2">{{ isEligible ? 'مؤهل مبدئياً!' : isPendingManualReview ? 'طلبك قيد المراجعة' : 'غير مؤهل حالياً' }}</h2>
-            <p class="text-sm text-text-light mb-6 leading-relaxed">{{ isPendingManualReview ? 'تم استلام طلبك بنجاح. كشف الحساب بصيغة PDF يتطلب مراجعة يدوية من فريقنا وسيتم التواصل معك قريباً.' : resultSummary }}</p>
+            <h2 class="text-lg font-bold text-brand mb-2">تم استلام طلبك</h2>
+            <p class="text-sm text-text-light mb-6 leading-relaxed">تم استلام طلبك بنجاح وسنتواصل معك قريباً.</p>
 
             <!-- Required documents (if eligible) -->
             <div v-if="isEligible && requiredDocs.length > 0" class="text-right mb-6">
@@ -728,15 +770,16 @@ import type { FacilityType, EntityType } from '../../types/request'
 const router = useRouter()
 const route = useRoute()
 
-const totalSteps = 7
+const totalSteps = 8
 const stepLabels = [
   'نوع التسهيلات',
   'السجل التجاري',
   'البيانات المالية',
   'الأسئلة الإلزامية',
   'رفع كشف الحساب',
+  'المستندات الأساسية',
   'المراجعة والإرسال',
-  'التحليل والنتائج',
+  'نتيجة الطلب',
 ]
 
 const step = ref(1)
@@ -852,6 +895,32 @@ async function confirmManualData() {
       age_in_months: ageInMonths,
       activity: '',
     }).catch(() => {})
+  }
+}
+
+// ---- Step 6: Basic Documents ----
+const basicDocs = ref([
+  { name: 'صورة الهوية الوطنية / الإقامة', file: null as File | null, uploaded: false, uploading: false, error: '' },
+  { name: 'العنوان الوطني للمنشأة والملاك', file: null as File | null, uploaded: false, uploading: false, error: '' },
+  { name: 'شهادة الآيبان بالباركود', file: null as File | null, uploaded: false, uploading: false, error: '' },
+])
+const basicDocsAllSelected = computed(() => basicDocs.value.every(d => d.file !== null))
+
+async function handleBasicDocSelect(idx: number, event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input?.files?.[0]
+  if (!file) return
+  basicDocs.value[idx].file = file
+  basicDocs.value[idx].error = ''
+  if (!caseId.value) return
+  basicDocs.value[idx].uploading = true
+  try {
+    await analysisApi.uploadBasicDoc(caseId.value, basicDocs.value[idx].name, file)
+    basicDocs.value[idx].uploaded = true
+  } catch (err: any) {
+    basicDocs.value[idx].error = err.message || 'خطأ في الرفع'
+  } finally {
+    basicDocs.value[idx].uploading = false
   }
 }
 
@@ -1094,7 +1163,7 @@ async function submitRequest() {
   // The BS upload already triggers analysis on the backend
   // Just move to analysis tracking step
   isSubmitting.value = false
-  step.value = 7
+  step.value = 8
 
   startPolling()
 }
@@ -1173,6 +1242,7 @@ function retryWizard() {
   totalDebit.value = null
   posSales.value = null
   otherIncome.value = null
+  basicDocs.value.forEach(d => { d.file = null; d.uploaded = false; d.uploading = false; d.error = '' })
   financialSaved.value = false
   financialError.value = ''
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
