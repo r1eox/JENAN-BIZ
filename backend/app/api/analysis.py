@@ -295,8 +295,13 @@ async def upload_basic_doc(
 
     file_path, original_name = await _save_file(file, f"basic-docs/{case_id}")
 
-    # Re-fetch with row lock to prevent race condition when multiple docs upload simultaneously
-    result2 = await db.execute(select(Case).where(Case.id == case_id).with_for_update())
+    # Re-fetch with row lock AND populate_existing=True to bypass the ORM identity map
+    # so we always read the LATEST committed analysis_result from DB (not the stale in-memory copy)
+    result2 = await db.execute(
+        select(Case).where(Case.id == case_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
     case = result2.scalar_one_or_none()
     if not case:
         raise HTTPException(404, "الطلب غير موجود")

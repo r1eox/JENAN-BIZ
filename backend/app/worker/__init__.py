@@ -166,6 +166,15 @@ async def process_bank_statement(ctx: dict, case_id: str, file_bytes: bytes, req
                 analysis.rejection_reasons = ["غير مؤهل حالياً — يرجى مراجعة البيانات"]
 
             # Store full analysis result — preserve partner-entered fields
+            # Re-read analysis_result from DB with row lock to pick up any docs
+            # uploaded by the partner concurrently (expire_on_commit=False means
+            # the in-memory copy is always the stale value from when the job started)
+            result_fresh = await db.execute(
+                select(Case).where(Case.id == case.id)
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            )
+            case = result_fresh.scalar_one()
             _prev_ar = case.analysis_result or {}
             case.confidence_score = analysis.confidence_score
             analysis_result_new = {
