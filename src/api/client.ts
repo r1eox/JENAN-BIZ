@@ -472,6 +472,24 @@ export const analysisApi = {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
   },
+
+  async downloadBasicDoc(caseId: string, docName: string, originalName: string): Promise<void> {
+    const headers: Record<string, string> = {}
+    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`
+    const params = new URLSearchParams()
+    params.set('doc_name', docName)
+    const res = await fetch(`${API_BASE}/analysis/${caseId}/basic-doc?${params}`, { headers })
+    if (!res.ok) throw new ApiException(res.status, 'فشل تحميل الملف')
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = originalName
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  },
 }
 
 // ─── Users API ────────────────────────────────────────

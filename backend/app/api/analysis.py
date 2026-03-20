@@ -293,15 +293,52 @@ async def upload_basic_doc(
     if current_user.role == UserRole.partner and case.partner_id != current_user.id:
         raise HTTPException(403, "ليس لديك صلاحية")
 
-    _, filename = await _save_file(file, f"basic-docs/{case_id}")
+    file_path, original_name = await _save_file(file, f"basic-docs/{case_id}")
 
     existing = dict(case.analysis_result or {})
     basic_docs = existing.get("basic_docs", {})
-    basic_docs[doc_name] = filename
+    basic_docs[doc_name] = {"path": file_path, "original_name": original_name}
     existing["basic_docs"] = basic_docs
     case.analysis_result = existing
     await db.commit()
-    return {"status": "ok", "filename": filename}
+    return {"status": "ok", "filename": original_name}
+
+
+@router.get("/{case_id}/basic-doc")
+async def download_basic_doc(
+    case_id: uuid.UUID,
+    doc_name: str = Query(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Download a basic document uploaded in wizard step 6."""
+    result = await db.execute(select(Case).where(Case.id == case_id))
+    case = result.scalar_one_or_none()
+    if not case:
+        raise HTTPException(404, "الطلب غير موجود")
+    if current_user.role == UserRole.partner and str(case.partner_id) != str(current_user.id):
+        raise HTTPException(403, "غير مخول")
+
+    basic_docs = (case.analysis_result or {}).get("basic_docs", {})
+    doc_info = basic_docs.get(doc_name)
+    if not doc_info:
+        raise HTTPException(404, "المستند غير موجود")
+
+    # Support both old format (plain string) and new format (dict with path)
+    if isinstance(doc_info, dict):
+        file_path = doc_info.get("path", "")
+        original_name = doc_info.get("original_name", doc_name)
+    else:
+        raise HTTPException(404, "لا يمكن تحميل هذا المستند — يرجى إعادة رفعه")
+
+    if not file_path or not os.path.isfile(file_path):
+        raise HTTPException(404, "الملف غير متاح على الخادم")
+
+    return FileResponse(
+        path=file_path,
+        filename=original_name,
+        media_type="application/octet-stream",
+    )
 
 
 # ─── Save financial data ──────────────────────────────

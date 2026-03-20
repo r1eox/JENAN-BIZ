@@ -145,7 +145,7 @@
           <!-- Basic docs uploaded in step 6 -->
           <template v-if="Object.keys(caseData.analysis_result?.basic_docs || {}).length > 0">
             <p class="text-xs font-bold text-brand mt-3 mb-1.5">المستندات الأساسية</p>
-            <div v-for="(filename, docName) in (caseData.analysis_result?.basic_docs || {})" :key="docName"
+            <div v-for="(docInfo, docName) in (caseData.analysis_result?.basic_docs || {})" :key="docName"
               class="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-2.5">
               <div class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,6 +153,7 @@
                 </svg>
                 <span class="text-xs text-brand font-medium">{{ docName }}</span>
               </div>
+              <button @click="downloadBasicDoc(String(docName), docInfo)" class="text-xs font-bold text-blue hover:underline cursor-pointer">تحميل</button>
             </div>
           </template>
 
@@ -651,6 +652,14 @@ async function downloadFile(type: 'cr' | 'bs') {
 async function downloadSupDoc(doc: any) {
   try {
     await analysisApi.downloadDoc(caseId, doc.stored_name, doc.original_name)
+  } catch { /* silent */ }
+}
+
+// Basic docs download
+async function downloadBasicDoc(docName: string, docInfo: any) {
+  try {
+    const originalName = typeof docInfo === 'object' ? (docInfo?.original_name || docName) : String(docInfo)
+    await analysisApi.downloadBasicDoc(caseId, docName, originalName)
   } catch { /* silent */ }
 }
 
