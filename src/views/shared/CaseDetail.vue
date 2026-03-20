@@ -105,24 +105,24 @@
         <div class="grid grid-cols-2 gap-2">
           <div class="bg-bg rounded-xl p-3 text-center">
             <p class="text-[10px] text-text-light mb-1">مجموع الدائن</p>
-            <p class="text-sm font-bold text-success" dir="ltr">{{ Number(caseData.analysis_result?.total_credit || 0).toLocaleString('ar-SA') }} ر.س</p>
+            <p class="text-sm font-bold text-success" dir="ltr">{{ Number(caseData.analysis_result?.total_credit || 0).toLocaleString('en-US') }} ر.س</p>
           </div>
           <div class="bg-bg rounded-xl p-3 text-center">
             <p class="text-[10px] text-text-light mb-1">مجموع المدين</p>
-            <p class="text-sm font-bold text-danger" dir="ltr">{{ Number(caseData.analysis_result?.total_debit || 0).toLocaleString('ar-SA') }} ر.س</p>
+            <p class="text-sm font-bold text-danger" dir="ltr">{{ Number(caseData.analysis_result?.total_debit || 0).toLocaleString('en-US') }} ر.س</p>
           </div>
           <div v-if="caseData.analysis_result?.pos_sales" class="bg-bg rounded-xl p-3 text-center">
             <p class="text-[10px] text-text-light mb-1">مبيعات POS</p>
-            <p class="text-sm font-bold text-brand" dir="ltr">{{ Number(caseData.analysis_result?.pos_sales || 0).toLocaleString('ar-SA') }} ر.س</p>
+            <p class="text-sm font-bold text-brand" dir="ltr">{{ Number(caseData.analysis_result?.pos_sales || 0).toLocaleString('en-US') }} ر.س</p>
           </div>
           <div v-if="caseData.analysis_result?.other_income" class="bg-bg rounded-xl p-3 text-center">
             <p class="text-[10px] text-text-light mb-1">إيرادات أخرى</p>
-            <p class="text-sm font-bold text-brand" dir="ltr">{{ Number(caseData.analysis_result?.other_income || 0).toLocaleString('ar-SA') }} ر.س</p>
+            <p class="text-sm font-bold text-brand" dir="ltr">{{ Number(caseData.analysis_result?.other_income || 0).toLocaleString('en-US') }} ر.س</p>
           </div>
           <div class="bg-blue/5 rounded-xl p-3 text-center col-span-2">
             <p class="text-[10px] text-text-light mb-1">صافي الدائن - المدين</p>
             <p class="text-sm font-bold" :class="(caseData.analysis_result?.total_credit||0) >= (caseData.analysis_result?.total_debit||0) ? 'text-success' : 'text-danger'" dir="ltr">
-              {{ Number((caseData.analysis_result?.total_credit||0) - (caseData.analysis_result?.total_debit||0)).toLocaleString('ar-SA') }} ر.س
+              {{ Number((caseData.analysis_result?.total_credit||0) - (caseData.analysis_result?.total_debit||0)).toLocaleString('en-US') }} ر.س
             </p>
           </div>
         </div>

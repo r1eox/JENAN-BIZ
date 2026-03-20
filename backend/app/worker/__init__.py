@@ -165,9 +165,10 @@ async def process_bank_statement(ctx: dict, case_id: str, file_bytes: bytes, req
                 analysis.is_eligible = False
                 analysis.rejection_reasons = ["غير مؤهل حالياً — يرجى مراجعة البيانات"]
 
-            # Store full analysis result
+            # Store full analysis result — preserve partner-entered fields
+            _prev_ar = case.analysis_result or {}
             case.confidence_score = analysis.confidence_score
-            case.analysis_result = {
+            analysis_result_new = {
                 "total_credits": analysis.total_credits,
                 "total_debits": analysis.total_debits,
                 "avg_monthly_credit": analysis.avg_monthly_credit,
@@ -203,6 +204,11 @@ async def process_bank_statement(ctx: dict, case_id: str, file_bytes: bytes, req
                 "max_monthly_drop_pct": analysis.max_monthly_drop_pct,
                 "profit_ratio": analysis.profit_ratio,
             }
+            # Preserve partner-entered financial data and uploaded basic docs
+            for _k in ("total_credit", "total_debit", "pos_sales", "other_income", "basic_docs"):
+                if _k in _prev_ar:
+                    analysis_result_new[_k] = _prev_ar[_k]
+            case.analysis_result = analysis_result_new
 
             case.analysis_progress = 100
             case.last_stage_change_at = datetime.utcnow()
