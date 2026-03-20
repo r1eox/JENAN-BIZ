@@ -295,6 +295,12 @@ async def upload_basic_doc(
 
     file_path, original_name = await _save_file(file, f"basic-docs/{case_id}")
 
+    # Re-fetch with row lock to prevent race condition when multiple docs upload simultaneously
+    result2 = await db.execute(select(Case).where(Case.id == case_id).with_for_update())
+    case = result2.scalar_one_or_none()
+    if not case:
+        raise HTTPException(404, "الطلب غير موجود")
+
     existing = dict(case.analysis_result or {})
     basic_docs = existing.get("basic_docs", {})
     basic_docs[doc_name] = {"path": file_path, "original_name": original_name}
@@ -591,7 +597,15 @@ async def upload_bank_statement(
                 case.stage = CaseStage.completing_request
                 case.result_summary = "كشف الحساب PDF — تعذّر التحليل التلقائي، يتطلب مراجعة يدوية"
                 case.analysis_progress = 100
-                case.analysis_result = {"pdf_manual_review": True, "required_docs": []}
+                _prev_ar = case.analysis_result or {}
+                case.analysis_result = {
+                    "pdf_manual_review": True, "required_docs": [],
+                    "total_credit": _prev_ar.get("total_credit"),
+                    "total_debit": _prev_ar.get("total_debit"),
+                    "pos_sales": _prev_ar.get("pos_sales"),
+                    "other_income": _prev_ar.get("other_income"),
+                    "basic_docs": _prev_ar.get("basic_docs", {}),
+                }
                 case.last_stage_change_at = datetime.utcnow()
                 await db.commit()
                 return {
@@ -727,6 +741,11 @@ async def upload_bank_statement(
             except Exception as _ai_err:
                 logger.warning(f"BS AI summary skipped: {_ai_err}")
 
+            # Preserve partner-entered fields that were saved before analysis ran
+            _prev = case.analysis_result or {}
+            for _k in ("total_credit", "total_debit", "pos_sales", "other_income", "basic_docs"):
+                if _k in _prev:
+                    analysis_result_dict[_k] = _prev[_k]
             case.analysis_result = analysis_result_dict
             case.analysis_progress = 100
             case.last_stage_change_at = datetime.utcnow()
@@ -839,6 +858,12 @@ async def upload_bank_statement(
                 analysis_result_dict["ai_summary"] = ai_summary
         except Exception as _ai_err:
             logger.warning(f"BS AI summary skipped: {_ai_err}")
+
+        # Preserve partner-entered fields that were saved before analysis ran
+        _prev = case.analysis_result or {}
+        for _k in ("total_credit", "total_debit", "pos_sales", "other_income", "basic_docs"):
+            if _k in _prev:
+                analysis_result_dict[_k] = _prev[_k]
         case.analysis_result = analysis_result_dict
         case.analysis_progress = 100
         case.last_stage_change_at = datetime.utcnow()

@@ -585,13 +585,20 @@
 
         <div class="flex gap-3 mt-4">
           <button @click="step = 5" class="flex-1 py-3 rounded-xl bg-white text-brand font-bold border-2 border-border hover:border-blue active:scale-[0.98] transition-all cursor-pointer">السابق</button>
-          <button
-            @click="step = 7"
-            :disabled="!basicDocsAllSelected"
-            class="flex-1 py-3.5 rounded-xl bg-blue text-white font-bold shadow-lg shadow-blue/25 hover:bg-blue-dark active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            التالي — المراجعة
-          </button>
+          <div class="flex-1 flex flex-col gap-2">
+            <div v-if="basicDocsUploadError" class="text-xs text-danger text-center">خطأ في رفع بعض الملفات — تحقّق وحاول مجدداً</div>
+            <button
+              @click="uploadAllBasicDocs"
+              :disabled="!basicDocsAllSelected || basicDocsUploading"
+              class="w-full py-3.5 rounded-xl bg-blue text-white font-bold shadow-lg shadow-blue/25 hover:bg-blue-dark active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span v-if="!basicDocsUploading">التالي — المراجعة</span>
+              <span v-else class="flex items-center justify-center gap-2">
+                <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                جاري رفع المستندات...
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -912,18 +919,35 @@ async function handleBasicDocSelect(idx: number, event: Event) {
   if (!file) return
   basicDocs.value[idx].file = markRaw(file)
   basicDocs.value[idx].fileName = file.name
+  basicDocs.value[idx].uploaded = false
   basicDocs.value[idx].error = ''
+}
+
+const basicDocsUploading = ref(false)
+const basicDocsUploadError = ref('')
+
+async function uploadAllBasicDocs() {
   if (!caseId.value) return
-  basicDocs.value[idx].uploading = true
-  try {
-    await analysisApi.uploadBasicDoc(caseId.value, basicDocs.value[idx].name, file)
-    basicDocs.value[idx].uploaded = true
-  } catch (err: any) {
-    const msg = typeof err.message === 'string' && !err.message.includes('Object') ? err.message : 'خطأ في رفع الملف، حاول مرة أخرى'
-    basicDocs.value[idx].error = msg
-  } finally {
-    basicDocs.value[idx].uploading = false
+  basicDocsUploading.value = true
+  basicDocsUploadError.value = ''
+  for (let i = 0; i < basicDocs.value.length; i++) {
+    const doc = basicDocs.value[i]
+    if (!doc.file || doc.uploaded) continue
+    basicDocs.value[i].uploading = true
+    try {
+      await analysisApi.uploadBasicDoc(caseId.value, doc.name, doc.file)
+      basicDocs.value[i].uploaded = true
+      basicDocs.value[i].error = ''
+    } catch (err: any) {
+      const msg = typeof err.message === 'string' && !err.message.includes('Object') ? err.message : 'خطأ في رفع الملف، حاول مرة أخرى'
+      basicDocs.value[i].error = msg
+      basicDocsUploadError.value = msg
+    } finally {
+      basicDocs.value[i].uploading = false
+    }
   }
+  basicDocsUploading.value = false
+  if (!basicDocsUploadError.value) step.value = 7
 }
 
 // ---- Step 3: Financial data ----
@@ -1245,6 +1269,8 @@ function retryWizard() {
   posSales.value = null
   otherIncome.value = null
   basicDocs.value.forEach(d => { d.file = null; d.fileName = ''; d.uploaded = false; d.uploading = false; d.error = '' })
+  basicDocsUploading.value = false
+  basicDocsUploadError.value = ''
   financialSaved.value = false
   financialError.value = ''
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
