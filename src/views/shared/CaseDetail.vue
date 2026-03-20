@@ -94,6 +94,40 @@
         </div>
       </div>
 
+      <!-- ═══ Financial Data (Employee/Supervisor/Owner) ═══ -->
+      <div v-if="role !== 'partner' && (caseData.analysis_result?.total_credit || caseData.analysis_result?.total_debit)" class="mt-4 bg-white rounded-2xl border border-border p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <svg class="w-5 h-5 text-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+          <h3 class="text-sm font-bold text-brand">البيانات المالية</h3>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="bg-bg rounded-xl p-3 text-center">
+            <p class="text-[10px] text-text-light mb-1">مجموع الدائن</p>
+            <p class="text-sm font-bold text-success" dir="ltr">{{ Number(caseData.analysis_result?.total_credit || 0).toLocaleString('ar-SA') }} ر.س</p>
+          </div>
+          <div class="bg-bg rounded-xl p-3 text-center">
+            <p class="text-[10px] text-text-light mb-1">مجموع المدين</p>
+            <p class="text-sm font-bold text-danger" dir="ltr">{{ Number(caseData.analysis_result?.total_debit || 0).toLocaleString('ar-SA') }} ر.س</p>
+          </div>
+          <div v-if="caseData.analysis_result?.pos_sales" class="bg-bg rounded-xl p-3 text-center">
+            <p class="text-[10px] text-text-light mb-1">مبيعات POS</p>
+            <p class="text-sm font-bold text-brand" dir="ltr">{{ Number(caseData.analysis_result?.pos_sales || 0).toLocaleString('ar-SA') }} ر.س</p>
+          </div>
+          <div v-if="caseData.analysis_result?.other_income" class="bg-bg rounded-xl p-3 text-center">
+            <p class="text-[10px] text-text-light mb-1">إيرادات أخرى</p>
+            <p class="text-sm font-bold text-brand" dir="ltr">{{ Number(caseData.analysis_result?.other_income || 0).toLocaleString('ar-SA') }} ر.س</p>
+          </div>
+          <div class="bg-blue/5 rounded-xl p-3 text-center col-span-2">
+            <p class="text-[10px] text-text-light mb-1">صافي الدائن - المدين</p>
+            <p class="text-sm font-bold" :class="(caseData.analysis_result?.total_credit||0) >= (caseData.analysis_result?.total_debit||0) ? 'text-success' : 'text-danger'" dir="ltr">
+              {{ Number((caseData.analysis_result?.total_credit||0) - (caseData.analysis_result?.total_debit||0)).toLocaleString('ar-SA') }} ر.س
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- ═══ Risk Flags (Supervisor/Owner) ═══ -->
       <div v-if="role !== 'partner' && riskFlags.length > 0" class="mt-4 bg-white rounded-2xl border border-border p-4">
         <div class="flex items-center gap-2 mb-3">
