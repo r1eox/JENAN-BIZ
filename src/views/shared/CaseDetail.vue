@@ -80,6 +80,19 @@
         </div>
       </div>
 
+      <!-- تاريخ التقديم + زر تحديث -->
+      <div class="mt-3 bg-white rounded-xl border border-border p-3 flex items-center justify-between">
+        <div>
+          <p class="text-xs text-text-light">تاريخ التقديم</p>
+          <p class="text-sm font-bold text-brand">{{ fmtDate(caseData.created_at) }}</p>
+        </div>
+        <button @click="loadCase()" :disabled="actionLoading" class="p-1.5 rounded-lg hover:bg-bg transition-colors text-text-light hover:text-blue disabled:opacity-50 cursor-pointer" title="تحديث">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+        </button>
+      </div>
+
       <!-- Assignment info -->
       <div v-if="role !== 'partner'" class="mt-4 bg-white rounded-xl border border-border p-3 flex items-center justify-between">
         <div>
@@ -285,6 +298,15 @@
             class="text-xs font-bold text-blue bg-blue/10 px-3 py-2 rounded-lg hover:bg-blue/20 transition-colors cursor-pointer"
           >
             ✉️ إرسال للجهة التمويلية
+          </button>
+
+          <!-- حفظ كعميل (supervisor/owner) -->
+          <button
+            v-if="role === 'supervisor' || role === 'owner'"
+            @click="showSaveContactModal = true"
+            class="text-xs font-bold text-brand bg-brand/10 px-3 py-2 rounded-lg hover:bg-brand/20 transition-colors cursor-pointer"
+          >
+            👤 حفظ كعميل
           </button>
         </div>
       </div>
@@ -542,6 +564,41 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- حفظ كعميل modal -->
+    <Teleport to="body">
+      <div v-if="showSaveContactModal" class="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center" @click.self="showSaveContactModal = false">
+        <div class="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5">
+          <h3 class="text-base font-bold text-brand mb-1">حفظ كعميل</h3>
+          <p class="text-xs text-text-light mb-3">سيتم حفظ بيانات الشريك في قائمة العملاء للتواصل المستقبلي</p>
+          <div class="space-y-3">
+            <div class="bg-bg rounded-xl p-3">
+              <p class="text-xs text-text-light">الاسم</p>
+              <p class="text-sm font-bold text-brand">{{ caseData?.partner_name || '—' }}</p>
+            </div>
+            <div class="bg-bg rounded-xl p-3">
+              <p class="text-xs text-text-light">المنشأة</p>
+              <p class="text-sm font-bold text-brand">{{ caseData?.company_name || '—' }}</p>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-brand mb-1.5">رقم الجوال <span class="text-danger">*</span></label>
+              <input v-model="saveContactPhone" type="tel" placeholder="05xxxxxxxx" dir="ltr"
+                class="w-full border-2 border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-brand mb-1.5">المجموعة</label>
+              <input v-model="saveContactGroup" type="text" placeholder="عملاء"
+                class="w-full border-2 border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue" />
+            </div>
+          </div>
+          <div v-if="saveContactSuccess" class="mt-3 text-center text-success text-sm font-bold">✓ تم الحفظ بنجاح</div>
+          <div class="flex gap-2 mt-4">
+            <button @click="showSaveContactModal = false" class="flex-1 py-2.5 rounded-xl border-2 border-border text-sm font-bold text-text-light cursor-pointer">إلغاء</button>
+            <button @click="doSaveContact" :disabled="!saveContactPhone.trim() || saveContactLoading" class="flex-1 py-2.5 rounded-xl bg-blue text-white text-sm font-bold disabled:opacity-50 cursor-pointer">حفظ</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -549,7 +606,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { currentUser, canSeeEntityNames } from '../../stores/authStore'
-import { casesApi, analysisApi } from '../../api/client'
+import { casesApi, analysisApi, contactsApi } from '../../api/client'
 import type { CaseResponse } from '../../api/client'
 import {
   STAGE_MAP,
@@ -776,6 +833,34 @@ async function downloadBasicDoc(docName: string, docInfo: any) {
 function fmtDate(iso: string): string {
   if (!iso) return ''
   return new Date(iso).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
+// Save as contact
+const showSaveContactModal = ref(false)
+const saveContactPhone = ref('')
+const saveContactGroup = ref('عملاء')
+const saveContactLoading = ref(false)
+const saveContactSuccess = ref(false)
+
+async function doSaveContact() {
+  if (!saveContactPhone.value.trim() || saveContactLoading.value) return
+  saveContactLoading.value = true
+  try {
+    await contactsApi.create({
+      name: caseData.value?.partner_name || '',
+      phone: saveContactPhone.value.trim(),
+      company_name: caseData.value?.company_name || '',
+      group_name: saveContactGroup.value || 'عملاء',
+      notes: `طلب #${caseData.value?.display_id || caseData.value?.id || ''}`,
+    })
+    saveContactSuccess.value = true
+    saveContactPhone.value = ''
+    setTimeout(() => {
+      showSaveContactModal.value = false
+      saveContactSuccess.value = false
+    }, 1500)
+  } catch { /* silent */ }
+  saveContactLoading.value = false
 }
 
 function goBack() {

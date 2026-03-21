@@ -90,7 +90,7 @@
           </svg>
         </div>
         <h3 class="text-lg font-bold text-success mb-1">{{ successMsg }}</h3>
-        <p class="text-xs text-text-light mb-4">تم تحليل المستندات بالذكاء الاصطناعي وانتقل الطلب للمرحلة التالية</p>
+        <p class="text-xs text-text-light mb-4">تم رفع المستندات بنجاح وانتقل الطلب للمرحلة التالية</p>
 
         <!-- AI Summary -->
         <div v-if="aiSummary" class="bg-blue/5 border border-blue/20 rounded-xl p-4 text-right mb-5">
@@ -98,7 +98,7 @@
             <svg class="w-4 h-4 text-blue flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
             </svg>
-            <span class="text-xs font-bold text-blue">تحليل الذكاء الاصطناعي</span>
+            <span class="text-xs font-bold text-blue">ملاحظة</span>
           </div>
           <p class="text-sm text-brand leading-relaxed">{{ aiSummary }}</p>
         </div>
@@ -145,7 +145,7 @@
               :style="{ width: uploadProgress + '%' }">
             </div>
           </div>
-          <p class="text-xs text-blue text-center mt-1">جاري رفع الملفات وتحليلها بالذكاء الاصطناعي...</p>
+          <p class="text-xs text-blue text-center mt-1">جاري الرفع الآن...</p>
         </div>
 
         <button
@@ -160,7 +160,7 @@
           <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
           </svg>
-          {{ submitting ? 'جاري التحليل...' : 'تأكيد تحميل المستندات' }}
+          {{ submitting ? 'جاري الرفع الآن...' : 'تأكيد تحميل المستندات' }}
         </button>
 
         <p v-if="uploadedCount < requiredCount" class="text-xs text-warning text-center mt-2">
@@ -263,6 +263,11 @@ async function submitDocuments() {
   uploadProgress.value = 10
   errorMsg.value = ''
 
+  // أنيميشن سلس لشريط التقدم أثناء الرفع
+  let progressTimer: ReturnType<typeof setInterval> | null = setInterval(() => {
+    if (uploadProgress.value < 88) uploadProgress.value += 2
+  }, 350)
+
   try {
     const filesToUpload = requiredDocuments.value
       .filter(d => d.file !== null)
@@ -274,11 +279,13 @@ async function submitDocuments() {
 
     uploadProgress.value = 30
     const result = await analysisApi.uploadDocuments(caseId.value, filesToUpload)
+    if (progressTimer) { clearInterval(progressTimer); progressTimer = null }
     uploadProgress.value = 100
     aiSummary.value = result.ai_summary || ''
     successMsg.value = result.message
     uploadDone.value = true
   } catch (err: any) {
+    if (progressTimer) { clearInterval(progressTimer); progressTimer = null }
     errorMsg.value = err?.message || 'حدث خطأ أثناء التحميل'
   } finally {
     submitting.value = false
