@@ -65,3 +65,36 @@ async def create_tables():
     """Create all tables (for development). Use Alembic in production."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    # Apply incremental column additions that create_all won't handle
+    await _run_schema_migrations()
+
+
+async def _run_schema_migrations():
+    """
+    Run lightweight ADD COLUMN IF NOT EXISTS migrations for production.
+    Safe to run on every startup — idempotent.
+    """
+    from sqlalchemy import text
+    is_sqlite = settings.DATABASE_URL.startswith("sqlite")
+
+    migrations = []
+
+    if is_sqlite:
+        # SQLite: check if column exists first (no IF NOT EXISTS support in older versions)
+        migrations = [
+            ("cases", "completion_required_docs", "TEXT", None),
+        ]
+        async with engine.begin() as conn:
+            for table, column, col_type, default in migrations:
+                result = await conn.execute(text(f"PRAGMA table_info({table})"))
+                existing = [row[1] for row in result.fetchall()]
+                if column not in existing:
+                    await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}"))
+    else:
+        # PostgreSQL: use IF NOT EXISTS
+        migrations = [
+            "ALTER TABLE cases ADD COLUMN IF NOT EXISTS completion_required_docs JSONB",
+        ]
+        async with engine.begin() as conn:
+            for stmt in migrations:
+                await conn.execute(text(stmt))
