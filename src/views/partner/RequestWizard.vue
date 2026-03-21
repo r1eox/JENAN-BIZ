@@ -975,6 +975,10 @@ async function saveFinancialData() {
 }
 
 async function goToQuestions() {
+  if (!caseId.value) {
+    financialError.value = 'لم يتم إنشاء الطلب بعد. يرجى العودة للخطوة السابقة وتأكيد بيانات السجل التجاري.'
+    return
+  }
   await saveFinancialData()
   if (!financialError.value) step.value = 4
 }
@@ -1058,8 +1062,8 @@ function removeCRFile() {
   crFile.value = null
   crError.value = ''
   crProgress.value = 0
-  caseId.value = ''
-  caseDisplayId.value = ''
+  // NOTE: do NOT clear caseId — the case already exists in the DB.
+  // A new upload will update the same case instead of creating a new one.
   if (crInput.value) crInput.value.value = ''
 }
 
@@ -1104,7 +1108,7 @@ function finishNotEligible() {
 // ---- Pre-filter ----
 async function runPreFilter() {
   if (!caseId.value) {
-    preFilterError.value = 'لم يتم رفع السجل التجاري بعد'
+    preFilterError.value = 'لم يتم إنشاء الطلب بعد. يرجى العودة للخطوة السابقة والتأكد من رفع السجل التجاري أو تأكيد البيانات.'
     return
   }
 
