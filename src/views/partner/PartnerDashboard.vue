@@ -132,8 +132,8 @@
               </div>
             </div>
 
-            <!-- Upload docs CTA for completing_request (eligible OR manual review) -->
-            <div v-if="req.stage === 'completing_request'" class="mt-3">
+            <!-- Upload docs CTA: only for eligible cases in completing_request -->
+            <div v-if="req.stage === 'completing_request' && req.is_eligible" class="mt-3">
               <router-link
                 :to="`/partner/documents/${req.id}`"
                 @click.stop
@@ -176,8 +176,8 @@
               </button>
             </div>
 
-            <!-- Result summary -->
-            <p v-if="req.result_summary" class="text-xs text-text-light mt-2 leading-relaxed">
+            <!-- Result summary (hide internal PDF analysis messages) -->
+            <p v-if="req.result_summary && !req.result_summary.includes('تعذّر') && !req.result_summary.includes('يدوية')" class="text-xs text-text-light mt-2 leading-relaxed">
               {{ req.result_summary }}
             </p>
           </button>
@@ -232,13 +232,17 @@ const hasProcessing = computed(() =>
   cases.value.some(c => c.stage === 'analyzing' && !!c.bs_file_name)
 )
 
-type ReqStatus = 'analyzing' | 'incomplete' | 'eligible' | 'rejected' | 'processing' | 'completed' | 'needs_completion'
+type ReqStatus = 'analyzing' | 'incomplete' | 'eligible' | 'rejected' | 'processing' | 'completed' | 'needs_completion' | 'under_review'
 
 function getStatus(c: CaseResponse): ReqStatus {
   if (c.stage === 'analyzing') return c.bs_file_name ? 'analyzing' : 'incomplete'
   if (c.stage === 'rejected') return 'rejected'
   if (c.stage === 'fees_received') return 'completed'
-  if (c.stage === 'completing_request') return 'needs_completion'
+  if (c.stage === 'completing_request') {
+    // Only show "needs_completion" if the case is actually eligible (partner needs to upload docs)
+    // Otherwise show "under_review" — team is reviewing, no action from partner needed
+    return c.is_eligible ? 'needs_completion' : 'under_review'
+  }
   if (c.is_eligible) return 'eligible'
   return 'processing'
 }
@@ -249,6 +253,7 @@ const STATUS_MAP: Record<ReqStatus, { label: string; bgColor: string; color: str
   eligible: { label: 'مؤهل', bgColor: 'bg-success/10', color: 'text-success', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
   rejected: { label: 'مرفوض', bgColor: 'bg-danger/10', color: 'text-danger', icon: 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' },
   needs_completion: { label: 'مطلوب استكمال ⚠', bgColor: 'bg-warning/15', color: 'text-warning font-bold', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+  under_review: { label: 'قيد المراجعة', bgColor: 'bg-blue/10', color: 'text-blue', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
   processing: { label: 'قيد المعالجة', bgColor: 'bg-warning/10', color: 'text-warning', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
   completed: { label: 'مكتمل', bgColor: 'bg-success/10', color: 'text-success', icon: 'M5 13l4 4L19 7' },
 }
