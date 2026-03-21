@@ -214,7 +214,7 @@ async def process_bank_statement(ctx: dict, case_id: str, file_bytes: bytes, req
                 "profit_ratio": analysis.profit_ratio,
             }
             # Preserve partner-entered financial data and uploaded basic docs
-            for _k in ("total_credit", "total_debit", "pos_sales", "other_income", "basic_docs"):
+            for _k in ("total_credit", "total_debit", "pos_sales", "other_income"):
                 if _k in _prev_ar:
                     analysis_result_new[_k] = _prev_ar[_k]
             case.analysis_result = analysis_result_new

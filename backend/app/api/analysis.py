@@ -285,7 +285,10 @@ async def upload_basic_doc(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Upload a basic document file (ID, IBAN, national address, etc.)"""
+    """Upload a basic document (ID, IBAN, national address).
+    Stored in supplementary_docs column — same mechanism as CR/BS supplementary docs,
+    completely isolated from analysis_result so the analysis engine never overwrites them.
+    """
     result = await db.execute(select(Case).where(Case.id == case_id))
     case = result.scalar_one_or_none()
     if not case:
@@ -293,10 +296,19 @@ async def upload_basic_doc(
     if current_user.role == UserRole.partner and case.partner_id != current_user.id:
         raise HTTPException(403, "ليس لديك صلاحية")
 
-    file_path, original_name = await _save_file(file, f"basic-docs/{case_id}")
+    # Save to docs/{case_id} — same folder used by the supplementary-doc download endpoint
+    subfolder = f"docs/{case_id}"
+    os.makedirs(os.path.join(UPLOAD_DIR, subfolder), exist_ok=True)
+    ext = (file.filename or "bin").rsplit(".", 1)[-1] if "." in (file.filename or "") else "bin"
+    unique_name = f"{uuid.uuid4().hex}.{ext}"
+    file_path = os.path.join(UPLOAD_DIR, subfolder, unique_name)
+    content = await file.read()
+    async with aiofiles.open(file_path, "wb") as out:
+        await out.write(content)
 
-    # Re-fetch with row lock AND populate_existing=True to bypass the ORM identity map
-    # so we always read the LATEST committed analysis_result from DB (not the stale in-memory copy)
+    original_name = file.filename or unique_name
+
+    # Re-fetch with row lock + populate_existing to bypass the ORM identity map
     result2 = await db.execute(
         select(Case).where(Case.id == case_id)
         .with_for_update()
@@ -306,50 +318,22 @@ async def upload_basic_doc(
     if not case:
         raise HTTPException(404, "الطلب غير موجود")
 
-    existing = dict(case.analysis_result or {})
-    basic_docs = existing.get("basic_docs", {})
-    basic_docs[doc_name] = {"path": file_path, "original_name": original_name}
-    existing["basic_docs"] = basic_docs
-    case.analysis_result = existing
+    # Write to supplementary_docs — not analysis_result, so analysis can never overwrite it
+    existing_docs = list(case.supplementary_docs or [])
+    # If partner re-uploads the same doc, replace the old entry
+    existing_docs = [d for d in existing_docs
+                     if not (d.get("type") == "basic_doc" and d.get("label") == doc_name)]
+    existing_docs.append({
+        "type": "basic_doc",
+        "label": doc_name,
+        "stored_name": unique_name,
+        "original_name": original_name,
+        "size": len(content),
+        "uploaded_at": datetime.utcnow().isoformat(),
+    })
+    case.supplementary_docs = existing_docs
     await db.commit()
     return {"status": "ok", "filename": original_name}
-
-
-@router.get("/{case_id}/basic-doc")
-async def download_basic_doc(
-    case_id: uuid.UUID,
-    doc_name: str = Query(...),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Download a basic document uploaded in wizard step 6."""
-    result = await db.execute(select(Case).where(Case.id == case_id))
-    case = result.scalar_one_or_none()
-    if not case:
-        raise HTTPException(404, "الطلب غير موجود")
-    if current_user.role == UserRole.partner and str(case.partner_id) != str(current_user.id):
-        raise HTTPException(403, "غير مخول")
-
-    basic_docs = (case.analysis_result or {}).get("basic_docs", {})
-    doc_info = basic_docs.get(doc_name)
-    if not doc_info:
-        raise HTTPException(404, "المستند غير موجود")
-
-    # Support both old format (plain string) and new format (dict with path)
-    if isinstance(doc_info, dict):
-        file_path = doc_info.get("path", "")
-        original_name = doc_info.get("original_name", doc_name)
-    else:
-        raise HTTPException(404, "لا يمكن تحميل هذا المستند — يرجى إعادة رفعه")
-
-    if not file_path or not os.path.isfile(file_path):
-        raise HTTPException(404, "الملف غير متاح على الخادم")
-
-    return FileResponse(
-        path=file_path,
-        filename=original_name,
-        media_type="application/octet-stream",
-    )
 
 
 # ─── Save financial data ──────────────────────────────
@@ -609,7 +593,6 @@ async def upload_bank_statement(
                     "total_debit": _prev_ar.get("total_debit"),
                     "pos_sales": _prev_ar.get("pos_sales"),
                     "other_income": _prev_ar.get("other_income"),
-                    "basic_docs": _prev_ar.get("basic_docs", {}),
                 }
                 case.last_stage_change_at = datetime.utcnow()
                 await db.commit()
@@ -748,7 +731,7 @@ async def upload_bank_statement(
 
             # Preserve partner-entered fields that were saved before analysis ran
             _prev = case.analysis_result or {}
-            for _k in ("total_credit", "total_debit", "pos_sales", "other_income", "basic_docs"):
+            for _k in ("total_credit", "total_debit", "pos_sales", "other_income"):
                 if _k in _prev:
                     analysis_result_dict[_k] = _prev[_k]
             case.analysis_result = analysis_result_dict
@@ -866,7 +849,7 @@ async def upload_bank_statement(
 
         # Preserve partner-entered fields that were saved before analysis ran
         _prev = case.analysis_result or {}
-        for _k in ("total_credit", "total_debit", "pos_sales", "other_income", "basic_docs"):
+        for _k in ("total_credit", "total_debit", "pos_sales", "other_income"):
             if _k in _prev:
                 analysis_result_dict[_k] = _prev[_k]
         case.analysis_result = analysis_result_dict

@@ -176,25 +176,28 @@
           </div>
           <p v-if="!caseData.cr_file_name && !caseData.bs_file_name" class="text-xs text-text-light">لا توجد ملفات مرفقة</p>
 
-          <!-- Basic docs uploaded in step 6 -->
-          <template v-if="Object.keys(caseData.analysis_result?.basic_docs || {}).length > 0">
-            <p class="text-xs font-bold text-brand mt-3 mb-1.5">المستندات الأساسية</p>
-            <div v-for="(docInfo, docName) in (caseData.analysis_result?.basic_docs || {})" :key="docName"
+          <!-- Basic docs uploaded in wizard step 6 (stored in supplementary_docs with type=basic_doc) -->
+          <template v-if="basicDocs.length > 0">
+            <p class="text-xs font-bold text-brand mt-3 mb-1.5">المستندات الأساسية ({{ basicDocs.length }})</p>
+            <div v-for="doc in basicDocs" :key="doc.stored_name"
               class="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-2.5">
               <div class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                <span class="text-xs text-brand font-medium">{{ docName }}</span>
+                <div>
+                  <p class="text-xs text-brand font-medium">{{ doc.label }}</p>
+                  <p class="text-[10px] text-text-light">{{ doc.original_name }}</p>
+                </div>
               </div>
-              <button @click="downloadBasicDoc(String(docName), docInfo)" class="text-xs font-bold text-blue hover:underline cursor-pointer">تحميل</button>
+              <button @click="downloadSupDoc(doc)" class="text-xs font-bold text-blue hover:underline cursor-pointer">تحميل</button>
             </div>
           </template>
 
-          <!-- Supplementary docs from partner completion -->
-          <template v-if="(caseData.supplementary_docs || []).length > 0">
-            <p class="text-xs font-bold text-brand mt-3 mb-1.5">مستندات الاستكمال ({{ (caseData.supplementary_docs || []).length }})</p>
-            <div v-for="doc in (caseData.supplementary_docs || [])" :key="doc.stored_name"
+          <!-- Supplementary docs from partner completing_request stage -->
+          <template v-if="completionDocs.length > 0">
+            <p class="text-xs font-bold text-brand mt-3 mb-1.5">مستندات الاستكمال ({{ completionDocs.length }})</p>
+            <div v-for="doc in completionDocs" :key="doc.stored_name"
               class="flex items-center justify-between bg-blue/5 border border-blue/15 rounded-lg p-2.5">
               <div class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-blue flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -543,6 +546,14 @@ const riskFlags = computed(() => {
   // risk_flags live inside analysis_result JSON, not at the top-level response field
   return c?.analysis_result?.risk_flags || c?.risk_flags || []
 })
+
+// Split supplementary_docs into basic docs (wizard step 6) and completion docs
+const basicDocs = computed(() =>
+  (caseData.value?.supplementary_docs || []).filter((d: any) => d.type === 'basic_doc')
+)
+const completionDocs = computed(() =>
+  (caseData.value?.supplementary_docs || []).filter((d: any) => d.type !== 'basic_doc')
+)
 
 async function loadCase() {
   loading.value = true
