@@ -23,6 +23,7 @@ from app.models.audit import AuditLog, AuditAction, Notification, NotificationTy
 from app.schemas.case import (
     CaseResponse, CaseListResponse,
     NoteCreate, NoteResponse,
+    CompletionRequest,
     ApprovalDecision, ApprovalResponse,
     AssignRequest, AdvanceStageRequest,
     ProposeStageRequest, RejectRequest, KPIResponse,
@@ -582,7 +583,7 @@ async def add_note(
 @router.post("/{case_id}/request-completion", response_model=CaseResponse)
 async def request_completion(
     case_id: uuid.UUID,
-    body: NoteCreate,
+    body: CompletionRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -598,14 +599,22 @@ async def request_completion(
     old_stage = case.stage
     case.stage = CaseStage.completing_request
     case.last_stage_change_at = datetime.utcnow()
+    case.completion_required_docs = body.required_docs or []
 
-    await _add_stage_history(db, case, current_user, f"طلب استكمال: {body.note}")
+    note_text = body.note.strip() if body.note else ""
+    history_note = "طلب استكمال"
+    if body.required_docs:
+        history_note += ": " + "، ".join(body.required_docs)
+    if note_text:
+        history_note += f" — {note_text}"
+
+    await _add_stage_history(db, case, current_user, history_note)
     await _log_audit(db, current_user, case, AuditAction.completion_requested, {
-        "from": old_stage.value, "note": body.note,
+        "from": old_stage.value, "note": note_text, "required_docs": body.required_docs,
     })
     await _notify(
         db, case.partner_id, NotificationType.completion_requested,
-        f"مطلوب استكمال بيانات: {case.display_id}", body.note, case.id,
+        f"مطلوب استكمال بيانات: {case.display_id}", history_note, case.id,
     )
 
     await db.commit()

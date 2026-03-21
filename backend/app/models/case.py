@@ -162,6 +162,9 @@ class Case(Base):
     # Supplementary documents (uploaded when completing_request)
     supplementary_docs: Mapped[list | None] = mapped_column(JSONType(), nullable=True)
 
+    # Docs required by staff when requesting completion (e.g. ["صورة الهوية", "عقد الإيجار"])
+    completion_required_docs: Mapped[list | None] = mapped_column(JSONType(), nullable=True)
+
     # Result
     result_summary: Mapped[str] = mapped_column(Text, default="")
 

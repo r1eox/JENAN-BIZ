@@ -388,11 +388,11 @@
           </div>
         </div>
 
-        <!-- Required docs from analysis result -->
-        <div v-if="(caseData.analysis_result?.required_docs || []).length > 0" class="mb-3 bg-white rounded-xl p-3">
-          <p class="text-xs font-bold text-brand mb-2">المستندات المطلوبة:</p>
+        <!-- Required docs specified by staff -->
+        <div v-if="(caseData.completion_required_docs || []).length > 0" class="mb-3 bg-white rounded-xl p-3">
+          <p class="text-xs font-bold text-brand mb-2">المستندات المطلوبة منك:</p>
           <ul class="space-y-1">
-            <li v-for="doc in (caseData.analysis_result?.required_docs || [])" :key="doc"
+            <li v-for="doc in (caseData.completion_required_docs || [])" :key="doc"
               class="text-xs text-text-light flex items-center gap-1.5">
               <svg class="w-3 h-3 text-warning flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clip-rule="evenodd"/>
@@ -440,12 +440,52 @@
     <!-- Request completion modal -->
     <Teleport to="body">
       <div v-if="showCompletionModal" class="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center" @click.self="showCompletionModal = false">
-        <div class="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5">
-          <h3 class="text-base font-bold text-brand mb-3">طلب استكمال من الشريك</h3>
-          <textarea v-model="completionItems" rows="3" placeholder="المستندات / المعلومات المطلوبة..." class="w-full border-2 border-border rounded-xl p-3 text-sm focus:outline-none focus:border-blue resize-none"></textarea>
+        <div class="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 max-h-[90vh] overflow-y-auto">
+          <h3 class="text-base font-bold text-brand mb-1">طلب استكمال من الشريك</h3>
+          <p class="text-xs text-text-light mb-3">اختر المستندات المطلوبة من الشريك</p>
+
+          <!-- Preset doc checkboxes -->
+          <div class="grid grid-cols-2 gap-2 mb-3">
+            <label
+              v-for="doc in PRESET_DOCS"
+              :key="doc"
+              class="flex items-center gap-2 text-xs cursor-pointer border-2 rounded-xl px-3 py-2 transition-colors"
+              :class="selectedDocs.includes(doc) ? 'border-blue bg-blue/5 text-blue font-bold' : 'border-border text-text-light'"
+            >
+              <input type="checkbox" :value="doc" v-model="selectedDocs" class="hidden" />
+              <span class="w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors"
+                :class="selectedDocs.includes(doc) ? 'border-blue bg-blue' : 'border-gray-300'">
+                <svg v-if="selectedDocs.includes(doc)" class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                </svg>
+              </span>
+              {{ doc }}
+            </label>
+          </div>
+
+          <!-- Custom doc input -->
+          <div class="flex gap-2 mb-3">
+            <input v-model="customDoc" type="text" placeholder="مستند آخر (اكتب واضغط +)..."
+              class="flex-1 border-2 border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue"
+              @keydown.enter="addCustomDoc" />
+            <button @click="addCustomDoc" class="px-3 py-2 rounded-xl bg-blue/10 text-blue font-bold text-sm hover:bg-blue/20 cursor-pointer">+</button>
+          </div>
+
+          <!-- Selected docs chips -->
+          <div v-if="selectedDocs.length" class="flex flex-wrap gap-1.5 mb-3">
+            <span v-for="doc in selectedDocs" :key="doc"
+              class="inline-flex items-center gap-1 bg-blue/10 text-blue text-xs font-bold px-2.5 py-1 rounded-full">
+              {{ doc }}
+              <button @click="selectedDocs = selectedDocs.filter(d => d !== doc)" class="hover:text-danger cursor-pointer">×</button>
+            </span>
+          </div>
+
+          <!-- Optional note -->
+          <textarea v-model="completionNote" rows="2" placeholder="ملاحظة إضافية (اختياري)..." class="w-full border-2 border-border rounded-xl p-3 text-sm focus:outline-none focus:border-blue resize-none"></textarea>
+
           <div class="flex gap-2 mt-4">
             <button @click="showCompletionModal = false" class="flex-1 py-2.5 rounded-xl border-2 border-border text-sm font-bold text-text-light cursor-pointer">إلغاء</button>
-            <button @click="doRequestCompletion" :disabled="!completionItems.trim() || actionLoading" class="flex-1 py-2.5 rounded-xl bg-blue text-white text-sm font-bold disabled:opacity-50 cursor-pointer">إرسال</button>
+            <button @click="doRequestCompletion" :disabled="!selectedDocs.length || actionLoading" class="flex-1 py-2.5 rounded-xl bg-blue text-white text-sm font-bold disabled:opacity-50 cursor-pointer">إرسال</button>
           </div>
         </div>
       </div>
@@ -618,14 +658,39 @@ async function doPropose() {
 
 // Request completion
 const showCompletionModal = ref(false)
-const completionItems = ref('')
+const completionNote = ref('')
+const selectedDocs = ref<string[]>([])
+const customDoc = ref('')
+
+const PRESET_DOCS = [
+  'صورة الهوية الوطنية',
+  'كشف الحساب البنكي',
+  'السجل التجاري',
+  'عقد الإيجار',
+  'وثيقة ملكية العقار',
+  'شهادة الزكاة والدخل',
+  'رخصة البلدية',
+  'ضريبة القيمة المضافة',
+  'عقد التأسيس',
+  'فواتير المبيعات',
+]
+
+function addCustomDoc() {
+  const val = customDoc.value.trim()
+  if (val && !selectedDocs.value.includes(val)) {
+    selectedDocs.value.push(val)
+  }
+  customDoc.value = ''
+}
+
 async function doRequestCompletion() {
-  if (!completionItems.value.trim() || actionLoading.value) return
+  if (!selectedDocs.value.length || actionLoading.value) return
   actionLoading.value = true
   try {
-    await casesApi.requestCompletion(caseId, completionItems.value.trim())
+    await casesApi.requestCompletion(caseId, completionNote.value.trim(), selectedDocs.value)
     showCompletionModal.value = false
-    completionItems.value = ''
+    completionNote.value = ''
+    selectedDocs.value = []
     await loadCase()
   } catch { /* silent */ }
   actionLoading.value = false

@@ -134,6 +134,19 @@
 
             <!-- Upload docs CTA: only for eligible cases in completing_request -->
             <div v-if="req.stage === 'completing_request' && req.is_eligible" class="mt-3">
+              <!-- Required docs list -->
+              <div v-if="(req.completion_required_docs || []).length > 0" class="mb-2 bg-warning/5 rounded-xl p-2.5">
+                <p class="text-[10px] font-bold text-warning mb-1.5">المستندات المطلوبة:</p>
+                <ul class="space-y-1">
+                  <li v-for="doc in req.completion_required_docs" :key="doc"
+                    class="flex items-center gap-1.5 text-[11px] text-text-light">
+                    <svg class="w-3 h-3 text-warning flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clip-rule="evenodd"/>
+                    </svg>
+                    {{ doc }}
+                  </li>
+                </ul>
+              </div>
               <router-link
                 :to="`/partner/documents/${req.id}`"
                 @click.stop

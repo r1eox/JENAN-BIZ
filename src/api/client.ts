@@ -220,7 +220,10 @@ export interface CaseResponse {
     stored_name: string
     size: number
     uploaded_at: string
+    type?: string
   }>
+  // Docs required by staff when requesting completion
+  completion_required_docs?: string[]
   // Analysis result (contains required_docs, ai_summary, financials, etc.)
   analysis_result?: Record<string, any>
 }
@@ -287,8 +290,8 @@ export const casesApi = {
     return request('POST', `/cases/${caseId}/notes`, { note })
   },
 
-  async requestCompletion(caseId: string, note: string): Promise<CaseResponse> {
-    return request('POST', `/cases/${caseId}/request-completion`, { note })
+  async requestCompletion(caseId: string, note: string, requiredDocs: string[] = []): Promise<CaseResponse> {
+    return request('POST', `/cases/${caseId}/request-completion`, { note, required_docs: requiredDocs })
   },
 
   async getKpis(): Promise<any> {

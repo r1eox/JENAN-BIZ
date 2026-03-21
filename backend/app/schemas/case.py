@@ -24,6 +24,11 @@ class NoteCreate(BaseModel):
     note: str = Field(..., min_length=1, max_length=2000)
 
 
+class CompletionRequest(BaseModel):
+    note: str = Field(default="", max_length=2000)
+    required_docs: list[str] = Field(default_factory=list)
+
+
 class NoteResponse(BaseModel):
     id: UUID
     author_name: str
@@ -187,12 +192,20 @@ class CaseResponse(BaseModel):
     # Supplementary docs (uploaded by partner for completing_request)
     supplementary_docs: list[dict] = Field(default_factory=list)
 
+    # Docs required by staff when requesting completion
+    completion_required_docs: list[str] = Field(default_factory=list)
+
     # Analysis result (raw JSON)
     analysis_result: dict = Field(default_factory=dict)
 
     @field_validator('supplementary_docs', mode='before')
     @classmethod
     def coerce_supplementary_docs(cls, v):
+        return v if isinstance(v, list) else []
+
+    @field_validator('completion_required_docs', mode='before')
+    @classmethod
+    def coerce_completion_required_docs(cls, v):
         return v if isinstance(v, list) else []
 
     @field_validator('analysis_result', mode='before')
