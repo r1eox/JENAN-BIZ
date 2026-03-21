@@ -973,9 +973,10 @@ async def download_file(
         await db.commit()
         raise HTTPException(403, "ليس لديك صلاحية")
 
-    # Block download after case closure (except owner)
-    closed_stages = {CaseStage.fees_received, CaseStage.rejected}
-    if case.stage in closed_stages and current_user.role != UserRole.owner:
+    # Block download after case closure — only for non-owner staff on fees_received
+    # Partners can always access their own files; rejected cases remain readable by all
+    closed_stages = {CaseStage.fees_received}
+    if case.stage in closed_stages and current_user.role not in (UserRole.owner, UserRole.partner):
         await _log_audit(db, current_user, case, AuditAction.file_access_denied, {
             "file_type": file_type, "reason": "case_closed"
         })
