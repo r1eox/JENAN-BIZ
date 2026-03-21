@@ -584,7 +584,7 @@ async def upload_bank_statement(
                 # AI extraction failed → manual review fallback
                 case.is_eligible = False
                 case.stage = CaseStage.completing_request
-                case.result_summary = "كشف الحساب PDF — تعذّر التحليل التلقائي، يتطلب مراجعة يدوية"
+                case.result_summary = ""
                 case.analysis_progress = 100
                 _prev_ar = case.analysis_result or {}
                 case.analysis_result = {

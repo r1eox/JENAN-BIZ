@@ -215,8 +215,8 @@
         </div>
       </div>
 
-      <!-- Result summary -->
-      <div v-if="caseData.result_summary" class="mt-4 rounded-xl p-3 text-sm font-medium"
+      <!-- Result summary (skip internal PDF-review message) -->
+      <div v-if="caseData.result_summary && !caseData.result_summary.includes('تعذّر التحليل')" class="mt-4 rounded-xl p-3 text-sm font-medium"
         :class="
           caseData.stage === 'rejected' || caseData.result_summary.includes('غير مؤهل')
             ? 'bg-danger/5 text-danger border border-danger/20'
