@@ -1025,8 +1025,9 @@ const requiredDocs = ref<string[]>([])
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
 // True when PDF bank statement couldn't be parsed → awaiting manual review (not a rejection)
+// Empty result_summary also means PDF parse failure (manual review needed), not a rejection
 const isPendingManualReview = computed(() =>
-  !isEligible.value && resultSummary.value.includes('مراجعة يدوية')
+  !isEligible.value && (resultSummary.value.includes('مراجعة يدوية') || resultSummary.value === '')
 )
 
 onMounted(() => {

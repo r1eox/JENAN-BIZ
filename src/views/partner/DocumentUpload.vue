@@ -215,6 +215,15 @@ const requiredDocuments = ref<DocItem[]>([])
 onMounted(async () => {
   try {
     const caseData = await casesApi.get(caseId.value)
+
+    // Staff-specified docs (from completion request) take priority
+    const completionDocs: string[] = caseData.completion_required_docs || []
+    if (completionDocs.length > 0) {
+      requiredDocuments.value = completionDocs.map(name => makeDoc(name))
+      return
+    }
+
+    // Fall back to entity rule docs from AI analysis
     const aiDocs: string[] = caseData.analysis_result?.required_docs || []
     if (aiDocs.length > 0) {
       requiredDocuments.value = aiDocs.map(name => makeDoc(name))
