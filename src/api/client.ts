@@ -90,11 +90,13 @@ async function request<T>(
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}))
-    throw new ApiException(
-      response.status,
-      errorBody.detail || 'حدث خطأ في الخادم',
-      errorBody
-    )
+    let message = 'حدث خطأ في الخادم'
+    if (typeof errorBody.detail === 'string') {
+      message = errorBody.detail
+    } else if (Array.isArray(errorBody.detail) && errorBody.detail.length > 0) {
+      message = errorBody.detail.map((e: any) => e.msg || String(e)).join(' | ')
+    }
+    throw new ApiException(response.status, message, errorBody)
   }
 
   return response.json()
