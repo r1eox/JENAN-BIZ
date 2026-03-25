@@ -60,18 +60,40 @@ async def lifespan(app: FastAPI):
 
 
 async def _remove_demo_accounts():
-    """Always delete legacy demo accounts on every startup."""
-    from sqlalchemy import delete
+    """Always delete legacy demo accounts and all their data on every startup."""
+    from sqlalchemy import select, delete, update
     from app.models.user import User
+    from app.models.case import Case
+    from app.models.audit import AuditLog
 
     DEMO_PHONES = ["0500000001", "0500000002", "0500000003", "0500000004"]
     async with async_session() as db:
         for phone in DEMO_PHONES:
-            result = await db.execute(
-                delete(User).where(User.phone == phone)
+            user = (await db.execute(
+                select(User).where(User.phone == phone)
+            )).scalar_one_or_none()
+            if not user:
+                continue
+
+            uid = user.id
+
+            # 1) Delete cases owned by this partner (CASCADE removes stage_history,
+            #    assignments, internal_notes, stage_approvals automatically)
+            await db.execute(delete(Case).where(Case.partner_id == uid))
+
+            # 2) Nullify assignments to this user in remaining cases
+            await db.execute(
+                update(Case).where(Case.assigned_to == uid).values(assigned_to=None)
             )
-            if result.rowcount:
-                logger.info(f"Removed demo account: {phone}")
+
+            # 3) Delete audit log entries (no ondelete on user_id FK)
+            await db.execute(delete(AuditLog).where(AuditLog.user_id == uid))
+
+            # 4) Delete the user (notifications cascade-delete via ondelete="CASCADE")
+            await db.execute(delete(User).where(User.id == uid))
+
+            logger.info(f"Removed demo account: {phone}")
+
         await db.commit()
 
 

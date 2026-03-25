@@ -40,15 +40,6 @@ npm install
 npm run dev
 ```
 
-### حسابات تجريبية
-
-| الدور | الجوال | كلمة المرور |
-|-------|--------|-------------|
-| شريك | 0500000001 | password123 |
-| موظف | 0500000002 | password123 |
-| مشرف | 0500000003 | password123 |
-| مالك | 0500000004 | password123 |
-
 ### API Documentation
 - Swagger UI: http://localhost:8000/api/docs
 - ReDoc: http://localhost:8000/api/redoc
