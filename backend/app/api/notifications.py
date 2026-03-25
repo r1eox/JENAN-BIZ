@@ -18,7 +18,7 @@ from datetime import datetime
 from app.database import get_db
 from app.models.user import User
 from app.models.audit import Notification, NotificationType
-from app.models.case import Case
+from app.models.case import Case, CaseStage
 from app.core.rbac import get_current_user, require_role
 from app.core.dependencies import PaginationParams
 from app.services.whatsapp import get_whatsapp
@@ -176,7 +176,7 @@ async def send_whatsapp_reminder(
         message = body.custom_message
     else:
         message = (
-            f"🔔 تنبيه من جنان بز\n\n"
+            f"🔔 تنبيه من جنان بيز\n\n"
             f"مرحباً {partner.name}،\n"
             f"يرجى مراجعة طلبك رقم {str(case.id)[:8]} — "
             f"هناك مستندات ناقصة أو تحتاج إلى تحديث.\n\n"
@@ -212,7 +212,7 @@ async def auto_remind_missing_docs(
 ):
     """
     Auto-send WhatsApp reminders to ALL partners whose cases are
-    in 'تحميل المستندات' or 'تقييم الأهلية' stages and have been
+    in 'analyzing' or 'completing_request' stages and have been
     pending for more than 2 days.
     """
     from datetime import timedelta
@@ -224,7 +224,7 @@ async def auto_remind_missing_docs(
         select(Case, User)
         .join(User, Case.partner_id == User.id)
         .where(
-            Case.current_stage.in_(["تحميل المستندات", "تقييم الأهلية"]),
+            Case.stage.in_([CaseStage.analyzing, CaseStage.completing_request]),
             Case.updated_at < cutoff,
         )
     )
@@ -236,12 +236,12 @@ async def auto_remind_missing_docs(
 
     for case, partner in rows:
         message = (
-            f"🔔 تذكير من جنان بز\n\n"
+            f"🔔 تذكير من جنان بيز\n\n"
             f"مرحباً {partner.name}،\n"
-            f"طلبك رقم {str(case.id)[:8]} في مرحلة «{case.current_stage}» "
+            f"طلبك رقم {str(case.id)[:8]} في مرحلة «{case.stage}» "
             f"منذ أكثر من يومين.\n"
             f"يرجى استكمال المطلوب في أقرب وقت.\n\n"
-            f"فريق جنان بز"
+            f"فريق جنان بييز"
         )
 
         success = await wa.send_text(partner.phone, message)

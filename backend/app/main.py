@@ -71,36 +71,15 @@ async def _seed_demo_data():
 
         logger.info("Seeding demo users...")
 
-        demo_users = [
-            User(
-                name="شريك تجريبي",
-                phone="0500000001",
-                password_hash=hash_password("password123"),
-                role=UserRole.partner,
-            ),
-            User(
-                name="موظف تجريبي",
-                phone="0500000002",
-                password_hash=hash_password("password123"),
-                role=UserRole.employee,
-            ),
-            User(
-                name="مشرف تجريبي",
-                phone="0500000003",
-                password_hash=hash_password("password123"),
-                role=UserRole.supervisor,
-            ),
-            User(
-                name="مالك النظام",
-                phone="0500000004",
-                password_hash=hash_password("password123"),
-                role=UserRole.owner,
-            ),
-        ]
-        for u in demo_users:
-            db.add(u)
+        owner = User(
+            name=settings.OWNER_NAME,
+            phone=settings.OWNER_PHONE,
+            password_hash=hash_password(settings.OWNER_PASSWORD),
+            role=UserRole.owner,
+        )
+        db.add(owner)
         await db.commit()
-        logger.info(f"Seeded {len(demo_users)} demo users")
+        logger.info(f"Seeded owner account: {settings.OWNER_PHONE}")
 
 
 async def _sync_entity_rules():

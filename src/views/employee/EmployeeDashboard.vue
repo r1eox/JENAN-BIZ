@@ -80,13 +80,12 @@
           <p class="text-sm text-text-light">لا توجد طلبات في هذا التصنيف</p>
         </div>
 
-        <button
+        <div
           v-for="c in filteredCases"
           :key="c.id"
-          @click="openCase(c.id)"
-          class="w-full bg-white rounded-2xl border border-border p-4 text-right hover:border-blue/30 hover:shadow-sm transition-all cursor-pointer"
+          class="bg-white rounded-2xl border border-border p-4 hover:border-blue/30 hover:shadow-sm transition-all"
         >
-          <div class="flex items-start justify-between gap-3">
+          <div class="flex items-start justify-between gap-3" @click="openCase(c.id)" style="cursor:pointer">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-1">
                 <span class="text-xs font-mono text-text-light">{{ c.display_id }}</span>
@@ -125,9 +124,17 @@
             </div>
           </div>
 
-          <!-- Last update -->
-          <p class="text-[10px] text-text-light mt-1.5">آخر تحديث: {{ formatDate(c.updated_at) }}</p>
-        </button>
+          <!-- Last update + claim button -->
+          <div class="mt-1.5 flex items-center justify-between">
+            <p class="text-[10px] text-text-light">آخر تحديث: {{ formatDate(c.updated_at) }}</p>
+            <button
+              v-if="!c.assigned_to && c.stage !== 'rejected' && c.stage !== 'fees_received'"
+              @click.stop="doClaim(c.id)"
+              :disabled="claimingId === c.id"
+              class="text-xs font-bold text-blue bg-blue/10 px-3 py-1 rounded-lg hover:bg-blue/20 transition-colors cursor-pointer disabled:opacity-50"
+            >استلام الطلب</button>
+          </div>
+        </div>
       </div>
     </main>
 
@@ -199,6 +206,16 @@ const filteredCases = computed(() => {
 
 function stageConfig(stage: string) { return STAGE_MAP[stage as RequestStage] ?? STAGE_MAP['analyzing'] }
 function stageProgress(stage: string) { return getStageProgress(stage as RequestStage) }
+
+const claimingId = ref<string | null>(null)
+async function doClaim(caseId: string) {
+  claimingId.value = caseId
+  try {
+    await casesApi.claim(caseId)
+    await loadCases()
+  } catch { /* silent */ }
+  claimingId.value = null
+}
 
 function hoursSince(c: CaseResponse): number {
   const ms = Date.now() - new Date(c.last_stage_change_at || c.updated_at).getTime()

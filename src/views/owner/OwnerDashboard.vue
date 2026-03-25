@@ -155,7 +155,18 @@
       </div>
 
       <!-- Cases Section -->
-      <h2 class="text-lg font-bold text-brand mb-3 mt-2">الطلبات</h2>
+      <div class="flex items-center justify-between mb-3 mt-2">
+        <h2 class="text-lg font-bold text-brand">الطلبات</h2>
+        <button @click="exportCasesCSV"
+          class="flex items-center gap-1.5 text-xs font-bold text-success bg-success/10 px-3 py-1.5 rounded-lg hover:bg-success/20 transition-colors cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          تصدير CSV
+        </button>
+      </div>
 
       <!-- Cases Tabs -->
       <div class="flex gap-1 bg-white rounded-xl border border-border p-1 overflow-x-auto mb-3">
@@ -339,6 +350,40 @@ const filteredOwnerCases = computed(() => {
 
 function stageConf(stage: string) { return STAGE_MAP[stage as RequestStage] ?? STAGE_MAP['analyzing'] }
 function stageProgress(stage: string) { return getStageProgress(stage as RequestStage) }
+
+async function exportCasesCSV() {
+  try {
+    // Fetch all cases in batches (max 500 per request)
+    const allRows: CaseResponse[] = []
+    let page = 1
+    while (true) {
+      const resp = await casesApi.list({ size: 500, page })
+      allRows.push(...resp.items)
+      if (allRows.length >= resp.total || resp.items.length === 0) break
+      page++
+    }
+    const rows = allRows
+    const header = ['رقم الطلب', 'اسم المنشأة', 'السجل التجاري', 'نوع الكيان', 'الشريك', 'المرحلة', 'المنتج', 'الأهلية', 'تاريخ التقديم']
+    const lines = [header.join(','), ...rows.map(c => [
+      `"${c.display_id ?? ''}"`  ,
+      `"${(c.company_name ?? '').replace(/"/g, '""')}"`  ,
+      `"${c.registration_number ?? ''}"`,
+      `"${c.entity_type ?? ''}"`,
+      `"${(c.partner_name ?? '').replace(/"/g, '""')}"`,
+      `"${stageConf(c.stage)?.label ?? c.stage}"`,
+      `"${c.offer_code ?? ''}"`,
+      `"${c.is_eligible ? 'مؤهل' : 'غير مؤهل'}"`,
+      `"${c.created_at ? new Date(c.created_at).toLocaleDateString('ar-SA') : ''}"`
+    ].join(','))]
+    const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `طلبات_${new Date().toLocaleDateString('ar-SA').replace(/\//g, '-')}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch { /* silent */ }
+}
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }

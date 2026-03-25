@@ -176,12 +176,12 @@ class WhatsAppService:
         return results
 
 
-# Singleton
+# Singleton — recreated if settings change
 _whatsapp: WhatsAppService | None = None
 
 
 def get_whatsapp() -> WhatsAppService:
     global _whatsapp
-    if _whatsapp is None:
+    if _whatsapp is None or not _whatsapp.enabled:
         _whatsapp = WhatsAppService()
     return _whatsapp

@@ -11,7 +11,7 @@
           <NotificationBell />
           <router-link to="/owner/entities" class="text-sm text-text-light hover:text-blue transition-colors">الجهات</router-link>
           <router-link to="/owner/campaigns" class="text-sm text-text-light hover:text-blue transition-colors">الحملات</router-link>
-          <button @click="$router.push('/')" class="text-text-light hover:text-danger transition-colors cursor-pointer p-1">
+          <button @click="handleLogout" class="text-text-light hover:text-danger transition-colors cursor-pointer p-1">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
             </svg>
@@ -207,7 +207,11 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue'
 import { usersApi, type UserResponse } from '../../api/client'
+import { logout } from '../../stores/authStore'
 import NotificationBell from '../../components/NotificationBell.vue'
+import { useRouter } from 'vue-router'
+const router = useRouter()
+function handleLogout() { logout(); router.push('/login') }
 
 const users = ref<UserResponse[]>([])
 const loading = ref(false)

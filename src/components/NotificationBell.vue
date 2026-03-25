@@ -90,6 +90,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { notificationsApi, type NotificationItem } from '../api/client'
+import { currentUser } from '../stores/authStore'
 
 const router = useRouter()
 
@@ -167,8 +168,15 @@ async function handleClick(n: NotificationItem) {
   if (n.notification_type === 'new_partner') {
     router.push('/owner/users')
   } else if (n.notification_type === 'approval_result') {
-    // Partner approved/rejected — go to partner dashboard
-    router.push('/partner')
+    // Navigate based on role — partner sees their dashboard, staff see the case
+    const role = currentUser.value?.role
+    if (role === 'partner') {
+      router.push('/partner')
+    } else if (n.case_id) {
+      router.push(`/case/${n.case_id}`)
+    } else {
+      router.push(role === 'supervisor' || role === 'owner' ? '/supervisor' : '/employee')
+    }
   } else if (n.case_id) {
     router.push(`/case/${n.case_id}`)
   }

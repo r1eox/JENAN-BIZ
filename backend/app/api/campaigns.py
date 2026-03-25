@@ -164,11 +164,11 @@ async def _execute_campaign(campaign_id: uuid.UUID):
                     else:
                         ok = await wa.send_text(phone, campaign.content_text)
 
-                    if ok:
+                    if ok and ok.get('success'):
                         sent += 1
                     else:
                         failed += 1
-                        errors.append(f"{phone}: فشل الإرسال")
+                        errors.append(f"{phone}: {ok.get('error', 'فشل الإرسال')}")
                 except Exception as e:
                     failed += 1
                     errors.append(f"{phone}: {str(e)}")

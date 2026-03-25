@@ -11,7 +11,7 @@
           <NotificationBell />
           <router-link to="/owner/users" class="text-sm text-text-light hover:text-blue transition-colors">المستخدمون</router-link>
           <router-link to="/owner/campaigns" class="text-sm text-text-light hover:text-blue transition-colors">الحملات</router-link>
-          <button @click="$router.push('/')" class="text-text-light hover:text-danger transition-colors cursor-pointer p-1">
+          <button @click="handleLogout" class="text-text-light hover:text-danger transition-colors cursor-pointer p-1">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
             </svg>
@@ -28,6 +28,15 @@
           <p class="text-sm text-text-light mt-1">إدارة جهات الاتصال للحملات التسويقية عبر واتساب</p>
         </div>
         <div class="flex gap-2">
+          <button
+            @click="exportCSV"
+            class="bg-white border border-border text-text-light text-sm font-semibold px-4 py-2.5 rounded-xl hover:border-success/50 hover:text-success transition-colors cursor-pointer flex items-center gap-2"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            تصدير CSV
+          </button>
           <button
             @click="showBulkModal = true"
             class="bg-white border border-border text-text-light text-sm font-semibold px-4 py-2.5 rounded-xl hover:border-blue/30 transition-colors cursor-pointer flex items-center gap-2"
@@ -112,6 +121,17 @@
                 <td class="px-4 py-3 text-text-light text-xs">{{ sourceLabel(c.source) }}</td>
                 <td class="px-4 py-3 text-center">
                   <div class="flex items-center justify-center gap-1">
+                    <!-- WhatsApp direct button -->
+                    <a
+                      :href="`https://wa.me/${formatWhatsApp(c.phone)}`"
+                      target="_blank"
+                      class="text-success hover:text-green-700 p-1 cursor-pointer"
+                      title="واتساب"
+                    >
+                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                      </svg>
+                    </a>
                     <button @click="openEditModal(c)" class="text-blue hover:text-blue-dark p-1 cursor-pointer" title="تعديل">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -193,18 +213,30 @@
 
     <!-- Bulk Import Modal -->
     <Teleport to="body">
-      <div v-if="showBulkModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" @click.self="showBulkModal = false">
+      <div v-if="showBulkModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" @click.self="closeBulkModal">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6" @click.stop>
-          <h3 class="text-lg font-bold text-brand mb-2">استيراد جماعي</h3>
-          <p class="text-xs text-text-light mb-4">الصق البيانات بصيغة JSON — كل سطر يحتوي على phone (إجباري) و name, company_name, group_name (اختياري)</p>
+          <h3 class="text-lg font-bold text-brand mb-1">استيراد جهات الاتصال</h3>
+          <p class="text-xs text-text-light mb-4">ارفع ملف CSV — الأعمدة: الاسم، الجوال (إجباري)، الشركة، المجموعة</p>
 
-          <textarea
-            v-model="bulkJson"
-            rows="8"
-            dir="ltr"
-            class="w-full px-3 py-2 text-xs font-mono border border-border rounded-xl focus:outline-none focus:border-blue resize-none bg-gray-50"
-            placeholder='[{"phone":"0501234567","name":"أحمد","group_name":"عملاء VIP"}]'
-          ></textarea>
+          <!-- Template download -->
+          <button @click="downloadTemplate"
+            class="flex items-center gap-1.5 text-xs text-blue hover:underline mb-4 cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            تحميل نموذج CSV فارغ
+          </button>
+
+          <!-- File picker -->
+          <label class="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-blue/50 hover:bg-blue/5 transition-colors bg-gray-50">
+            <svg class="w-8 h-8 text-text-light mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <span v-if="!bulkFileName" class="text-xs text-text-light">اضغط لاختيار ملف CSV</span>
+            <span v-else class="text-xs font-medium text-blue">{{ bulkFileName }}</span>
+            <span v-if="bulkParsed.length" class="text-[10px] text-success mt-0.5">{{ bulkParsed.length }} جهة جاهزة للاستيراد</span>
+            <input ref="fileInput" type="file" accept=".csv" class="hidden" @change="onFileChange" />
+          </label>
 
           <p v-if="bulkError" class="text-xs text-danger mt-2">{{ bulkError }}</p>
           <p v-if="bulkResult" class="text-xs text-success mt-2">{{ bulkResult }}</p>
@@ -212,12 +244,12 @@
           <div class="flex gap-2 mt-4">
             <button
               @click="submitBulk"
-              :disabled="bulkSaving"
+              :disabled="bulkSaving || bulkParsed.length === 0"
               class="flex-1 py-2.5 rounded-xl bg-blue text-white text-sm font-semibold hover:bg-blue/90 transition-colors disabled:opacity-50 cursor-pointer"
             >
-              {{ bulkSaving ? 'جاري الاستيراد...' : 'استيراد' }}
+              {{ bulkSaving ? 'جاري الاستيراد...' : `استيراد ${bulkParsed.length ? bulkParsed.length + ' جهة' : ''}` }}
             </button>
-            <button @click="showBulkModal = false" class="px-4 py-2.5 rounded-xl bg-gray-100 text-text-light text-sm font-medium hover:bg-gray-200 transition-colors cursor-pointer">
+            <button @click="closeBulkModal" class="px-4 py-2.5 rounded-xl bg-gray-100 text-text-light text-sm font-medium hover:bg-gray-200 transition-colors cursor-pointer">
               إغلاق
             </button>
           </div>
@@ -230,7 +262,11 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { contactsApi, type ContactItem } from '../../api/client'
+import { logout } from '../../stores/authStore'
+import { useRouter } from 'vue-router'
 import NotificationBell from '../../components/NotificationBell.vue'
+const router = useRouter()
+function handleLogout() { logout(); router.push('/login') }
 
 const contacts = ref<ContactItem[]>([])
 const groups = ref<string[]>([])
@@ -249,12 +285,76 @@ const form = ref({ name: '', phone: '', company_name: '', group_name: 'عام', 
 const formError = ref('')
 const formSaving = ref(false)
 
-// Bulk modal
+// Bulk import modal
 const showBulkModal = ref(false)
-const bulkJson = ref('')
+const bulkFileName = ref('')
+const bulkParsed = ref<{ phone: string; name?: string; company_name?: string; group_name?: string }[]>([])
 const bulkError = ref('')
 const bulkResult = ref('')
 const bulkSaving = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
+
+function closeBulkModal() {
+  showBulkModal.value = false
+  bulkFileName.value = ''
+  bulkParsed.value = []
+  bulkError.value = ''
+  bulkResult.value = ''
+}
+
+function downloadTemplate() {
+  const bom = '\uFEFF'
+  const csv = bom + 'الاسم,الجوال,الشركة,المجموعة\nأحمد محمد,0501234567,شركة نموذجية,عام'
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'نموذج-جهات-الاتصال.csv'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function onFileChange(e: Event) {
+  bulkError.value = ''
+  bulkResult.value = ''
+  bulkParsed.value = []
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  bulkFileName.value = file.name
+  const reader = new FileReader()
+  reader.onload = (ev) => {
+    try {
+      const text = (ev.target?.result as string).replace(/^\uFEFF/, '')
+      const lines = text.split(/\r?\n/).filter(l => l.trim())
+      if (lines.length < 2) { bulkError.value = 'الملف فارغ أو لا يحتوي على بيانات'; return }
+
+      const header = lines[0].split(',')
+      const idx = (names: string[]) => header.findIndex(h => names.some(n => h.trim().replace(/"/g, '').includes(n)))
+      const phoneIdx = idx(['الجوال', 'phone', 'جوال', 'رقم'])
+      const nameIdx  = idx(['الاسم', 'name', 'اسم'])
+      const compIdx  = idx(['الشركة', 'company', 'شركة', 'منشأة'])
+      const groupIdx = idx(['المجموعة', 'group', 'مجموعة'])
+
+      if (phoneIdx === -1) { bulkError.value = 'لم يتم العثور على عمود الجوال — تأكد من وجود عمود باسم "الجوال"'; return }
+
+      const parsed: typeof bulkParsed.value = []
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',')
+        const phone = cols[phoneIdx]?.replace(/"/g, '').trim()
+        if (!phone) continue
+        parsed.push({
+          phone,
+          name:         nameIdx  >= 0 ? cols[nameIdx]?.replace(/"/g, '').trim()  || undefined : undefined,
+          company_name: compIdx  >= 0 ? cols[compIdx]?.replace(/"/g, '').trim()  || undefined : undefined,
+          group_name:   groupIdx >= 0 ? cols[groupIdx]?.replace(/"/g, '').trim() || undefined : undefined,
+        })
+      }
+      bulkParsed.value = parsed
+      if (parsed.length === 0) bulkError.value = 'لم يتم العثور على صفوف صالحة'
+    } catch { bulkError.value = 'حدث خطأ أثناء قراءة الملف' }
+  }
+  reader.readAsText(file, 'UTF-8')
+}
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -354,24 +454,67 @@ async function removeContact(id: string) {
   }
 }
 
+// Format phone for WhatsApp link (966 prefix)
+function formatWhatsApp(phone: string): string {
+  const cleaned = phone.replace(/\D/g, '')
+  if (cleaned.startsWith('0')) return '966' + cleaned.slice(1)
+  if (cleaned.startsWith('966')) return cleaned
+  return '966' + cleaned
+}
+
+// Export all contacts as CSV
+async function exportCSV() {
+  try {
+    // Fetch all contacts in batches (max 500 per request)
+    const allRows: typeof contacts.value = []
+    let page = 1
+    while (true) {
+      const data = await contactsApi.list({ size: 500, page })
+      allRows.push(...data.items)
+      if (allRows.length >= data.total || data.items.length === 0) break
+      page++
+    }
+    const rows = allRows
+    const header = ['الاسم', 'الجوال', 'الشركة', 'المجموعة', 'المصدر', 'الملاحظات', 'تاريخ الإضافة']
+    const lines = [
+      header.join(','),
+      ...rows.map(c => [
+        `"${(c.name || '').replace(/"/g, '""')}"`,
+        `"${c.phone}"`,
+        `"${(c.company_name || '').replace(/"/g, '""')}"`,
+        `"${(c.group_name || '').replace(/"/g, '""')}"`,
+        `"${sourceLabel(c.source)}"`,
+        `"${(c.notes || '').replace(/"/g, '""')}"`,
+        `"${c.created_at ? new Date(c.created_at).toLocaleDateString('ar-SA') : ''}"`,
+      ].join(','))
+    ]
+    const bom = '\uFEFF' // UTF-8 BOM for Arabic support in Excel
+    const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `جهات-الاتصال-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch {
+    // silent
+  }
+}
+
 async function submitBulk() {
+  if (bulkParsed.value.length === 0) return
   bulkError.value = ''
   bulkResult.value = ''
-  let items: any[]
-  try {
-    items = JSON.parse(bulkJson.value)
-    if (!Array.isArray(items)) throw new Error()
-  } catch {
-    bulkError.value = 'صيغة JSON غير صحيحة — يجب أن تكون مصفوفة []'
-    return
-  }
   bulkSaving.value = true
   try {
-    const result = await contactsApi.bulkImport(items)
-    bulkResult.value = `تم استيراد ${result.imported} جهة — تم تخطي ${result.skipped} مكرر`
-    if (result.errors.length > 0) {
-      bulkResult.value += ` — ${result.errors.length} خطأ`
-    }
+    const result = await contactsApi.bulkImport(bulkParsed.value)
+    bulkResult.value = `✓ تم استيراد ${result.imported} جهة — تم تخطي ${result.skipped} مكرر`
+    if (result.errors.length > 0) bulkResult.value += ` — ${result.errors.length} خطأ`
+    bulkParsed.value = []
+    bulkFileName.value = ''
+    if (fileInput.value) fileInput.value.value = ''
     fetchContacts()
     fetchGroups()
   } catch (err: any) {

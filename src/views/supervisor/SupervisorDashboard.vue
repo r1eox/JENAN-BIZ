@@ -175,11 +175,16 @@
             >تعيين موظف</button>
 
             <!-- Approve pending -->
-            <button
-              v-if="(c.approvals || []).some((a: any) => a.status === 'pending')"
-              @click="handleApproval(c)"
-              class="text-xs font-bold text-success bg-success/10 px-3 py-1.5 rounded-lg hover:bg-success/20 transition-colors cursor-pointer"
-            >اعتماد</button>
+            <template v-if="(c.approvals || []).some((a: any) => a.status === 'pending')">
+              <button
+                @click="handleApproval(c, true)"
+                class="text-xs font-bold text-success bg-success/10 px-3 py-1.5 rounded-lg hover:bg-success/20 transition-colors cursor-pointer"
+              >✓ اعتماد</button>
+              <button
+                @click="handleApproval(c, false)"
+                class="text-xs font-bold text-danger bg-danger/10 px-3 py-1.5 rounded-lg hover:bg-danger/20 transition-colors cursor-pointer"
+              >✗ رفض الاعتماد</button>
+            </template>
 
             <!-- Reject -->
             <button
@@ -270,10 +275,10 @@ async function loadData() {
 
 onMounted(loadData)
 
-// KPIs
-const kpiTotal = computed(() => kpi.value.total ?? cases.value.length)
-const kpiCompleted = computed(() => kpi.value.completed ?? 0)
-const kpiRejected = computed(() => kpi.value.rejected ?? 0)
+// KPIs — backend returns total_cases / completed_cases / rejected_cases
+const kpiTotal = computed(() => kpi.value.total_cases ?? kpi.value.total ?? cases.value.length)
+const kpiCompleted = computed(() => kpi.value.completed_cases ?? kpi.value.completed ?? 0)
+const kpiRejected = computed(() => kpi.value.rejected_cases ?? kpi.value.rejected ?? 0)
 const kpiAvgHours = computed(() => kpi.value.avg_transition_hours ?? 0)
 
 // Stage distribution
@@ -355,12 +360,12 @@ async function doReject() {
   } catch { /* silent */ }
 }
 
-// Approve pending
-async function handleApproval(c: CaseResponse) {
+// Approve / reject pending approval
+async function handleApproval(c: CaseResponse, approved: boolean) {
   const pending = (c.approvals || []).find((a: any) => a.status === 'pending')
   if (pending) {
     try {
-      await casesApi.decideApproval(c.id, pending.id, true)
+      await casesApi.decideApproval(c.id, pending.id, approved)
       await loadData()
     } catch { /* silent */ }
   }

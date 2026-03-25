@@ -385,8 +385,8 @@
                 <span class="text-xs font-bold" :class="stageConf(entry.stage || entry.to_stage).color">
                   {{ stageConf(entry.stage || entry.to_stage).label }}
                 </span>
-                <span v-if="role !== 'partner' && entry.changed_by" class="text-[10px] text-text-light">
-                  بواسطة: {{ entry.changed_by }}
+                <span v-if="role !== 'partner' && (entry.changed_by || entry.updated_by_name)" class="text-[10px] text-text-light">
+                  بواسطة: {{ entry.updated_by_name || entry.changed_by }}
                 </span>
               </div>
               <p v-if="entry.note" class="text-xs text-text-light mt-0.5">{{ entry.note }}</p>
@@ -553,7 +553,7 @@
               <option value="">اختر...</option>
               <option value="approved">موافقة</option>
               <option value="rejected">رفض</option>
-              <option value="refer_to_review">إحالة للمراجعة</option>
+              <option value="refer_review">إحالة للمراجعة</option>
             </select>
           </div>
           <textarea v-model="overrideReason" rows="3" placeholder="سبب التجاوز (مطلوب)..." class="w-full border-2 border-border rounded-xl p-3 text-sm focus:outline-none focus:border-success resize-none"></textarea>

@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     # Set to False in production to skip demo user creation
     SEED_DEMO_DATA: bool = True
+    # ── Owner Account (used on first seed) ───────
+    OWNER_PHONE: str = "0569202920"
+    OWNER_PASSWORD: str = "Jenan2030@"
+    OWNER_NAME: str = "جنان بيز"
     # ── OpenAI ───────────────────────────────
     OPENAI_API_KEY: str = ""
     OPENAI_ENABLED: bool = False
