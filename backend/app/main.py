@@ -473,8 +473,14 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
-# CORS — read from ALLOWED_ORIGINS env variable
-_origins = [o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
+# CORS — read from ALLOWED_ORIGINS env variable, always include GitHub Pages
+_origins_raw = [o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
+_origins = list(set(_origins_raw + [
+    "https://r1eox.github.io",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+]))
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_origins,

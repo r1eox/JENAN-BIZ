@@ -88,6 +88,13 @@ async function request<T>(
     }
   }
 
+  // Still 401 after refresh attempt (or no refresh token) → redirect to login
+  if (response.status === 401 && auth) {
+    clearTokens()
+    window.location.href = import.meta.env.BASE_URL + 'login'
+    throw new ApiException(401, 'انتهت الجلسة، يرجى تسجيل الدخول مجدداً')
+  }
+
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}))
     let message = 'حدث خطأ في الخادم'
