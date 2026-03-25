@@ -107,6 +107,14 @@
                 <span>{{ formatDate(c.created_at) }}</span>
                 <span v-if="c.sent_at">• أُرسلت {{ formatDate(c.sent_at) }}</span>
               </div>
+
+              <!-- Error log (collapsed) -->
+              <details v-if="c.error_log && c.error_log.length > 0" class="mt-2">
+                <summary class="text-[10px] text-danger cursor-pointer select-none">عرض أخطاء الإرسال ({{ c.error_log.length }})</summary>
+                <div class="mt-1 bg-danger/5 border border-danger/20 rounded-lg p-2 max-h-28 overflow-y-auto space-y-0.5">
+                  <p v-for="(e, i) in c.error_log" :key="i" class="text-[10px] text-danger font-mono break-all">{{ e }}</p>
+                </div>
+              </details>
             </div>
 
             <div class="flex items-center gap-1 flex-shrink-0">
@@ -116,6 +124,13 @@
                 class="bg-success/10 text-success text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-success/20 transition-colors cursor-pointer"
               >
                 إرسال
+              </button>
+              <button
+                v-if="c.status === 'failed' || c.status === 'sent'"
+                @click="sendCampaign(c)"
+                class="bg-amber-50 text-amber-700 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-colors cursor-pointer border border-amber-200"
+              >
+                إعادة إرسال
               </button>
               <button
                 v-if="c.status === 'draft'"

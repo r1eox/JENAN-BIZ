@@ -58,7 +58,10 @@ class WhatsAppService:
                 )
                 result = resp.json()
                 logger.info(f"[WhatsApp] Text sent to {phone}: {result}")
-                return {"success": resp.status_code == 200, "response": result}
+                # UltraMsg returns {"sent": "true", ...} on success
+                success = str(result.get("sent", "")).lower() == "true"
+                error_msg = result.get("error", "") or result.get("message", "")
+                return {"success": success, "response": result, "error": error_msg}
         except Exception as e:
             logger.error(f"[WhatsApp] Error sending text to {phone}: {e}")
             return {"success": False, "error": str(e)}
@@ -82,7 +85,9 @@ class WhatsAppService:
                     },
                 )
                 result = resp.json()
-                return {"success": resp.status_code == 200, "response": result}
+                success = str(result.get("sent", "")).lower() == "true"
+                error_msg = result.get("error", "") or result.get("message", "")
+                return {"success": success, "response": result, "error": error_msg}
         except Exception as e:
             logger.error(f"[WhatsApp] Error sending image to {phone}: {e}")
             return {"success": False, "error": str(e)}
@@ -106,7 +111,8 @@ class WhatsAppService:
                     },
                 )
                 result = resp.json()
-                return {"success": resp.status_code == 200, "response": result}
+                success = str(result.get("sent", "")).lower() == "true"
+                return {"success": success, "response": result, "error": result.get("error", "")}
         except Exception as e:
             logger.error(f"[WhatsApp] Error sending video to {phone}: {e}")
             return {"success": False, "error": str(e)}
@@ -131,7 +137,8 @@ class WhatsAppService:
                     },
                 )
                 result = resp.json()
-                return {"success": resp.status_code == 200, "response": result}
+                success = str(result.get("sent", "")).lower() == "true"
+                return {"success": success, "response": result, "error": result.get("error", "")}
         except Exception as e:
             logger.error(f"[WhatsApp] Error sending document to {phone}: {e}")
             return {"success": False, "error": str(e)}

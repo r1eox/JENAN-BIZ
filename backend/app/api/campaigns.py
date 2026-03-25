@@ -168,7 +168,10 @@ async def _execute_campaign(campaign_id: uuid.UUID):
                         sent += 1
                     else:
                         failed += 1
-                        errors.append(f"{phone}: {ok.get('error', 'فشل الإرسال')}")
+                        err_detail = ok.get('error') or ok.get('response', {}) if ok else 'لا يوجد رد'
+                        if isinstance(err_detail, dict):
+                            err_detail = str(err_detail)
+                        errors.append(f"{phone}: {err_detail}")
                 except Exception as e:
                     failed += 1
                     errors.append(f"{phone}: {str(e)}")
@@ -325,8 +328,8 @@ async def send_campaign(
     if not campaign:
         raise HTTPException(404, "الحملة غير موجودة")
 
-    if campaign.status != CampaignStatus.draft:
-        raise HTTPException(400, "يمكن إرسال الحملات المسودة فقط")
+    if campaign.status not in (CampaignStatus.draft, CampaignStatus.failed, CampaignStatus.sent):
+        raise HTTPException(400, "لا يمكن إرسال هذه الحملة")
 
     # Validate there's content to send
     if campaign.content_type == ContentType.text and not campaign.content_text:
