@@ -46,7 +46,10 @@ async def lifespan(app: FastAPI):
     await create_tables()
     logger.info("Database tables ready")
 
-    # Seed demo users (once, dev only) + always sync entity rules
+    # Always clean up demo accounts first
+    await _remove_demo_accounts()
+
+    # Seed owner account + always sync entity rules
     if settings.SEED_DEMO_DATA:
         await _seed_demo_data()
     await _sync_entity_rules()
@@ -56,21 +59,38 @@ async def lifespan(app: FastAPI):
     logger.info("Jenan BIZ Backend shutting down")
 
 
+async def _remove_demo_accounts():
+    """Always delete legacy demo accounts on every startup."""
+    from sqlalchemy import delete
+    from app.models.user import User
+
+    DEMO_PHONES = ["0500000001", "0500000002", "0500000003", "0500000004"]
+    async with async_session() as db:
+        for phone in DEMO_PHONES:
+            result = await db.execute(
+                delete(User).where(User.phone == phone)
+            )
+            if result.rowcount:
+                logger.info(f"Removed demo account: {phone}")
+        await db.commit()
+
+
 async def _seed_demo_data():
-    """Seed demo users on first run (users only)."""
+    """Ensure the owner account exists (idempotent)."""
     from sqlalchemy import select
     from app.models.user import User, UserRole
     from app.core import hash_password
 
     async with async_session() as db:
-        # Check if users exist
-        result = await db.execute(select(User).limit(1))
-        if result.scalar_one_or_none():
-            logger.info("Demo users already exist, skipping user seed")
+        owner_exists = (await db.execute(
+            select(User).where(User.phone == settings.OWNER_PHONE)
+        )).scalar_one_or_none()
+
+        if owner_exists:
+            logger.info("Owner account already exists, skipping seed")
             return
 
-        logger.info("Seeding demo users...")
-
+        logger.info("Seeding owner account...")
         owner = User(
             name=settings.OWNER_NAME,
             phone=settings.OWNER_PHONE,
