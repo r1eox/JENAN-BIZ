@@ -63,8 +63,7 @@ class WhatsAppService:
             async with httpx.AsyncClient(timeout=30) as client:
                 resp = await client.post(
                     url,
-                    params={"token": self.token},
-                    json={"to": phone, "body": message},
+                    data={"token": self.token, "to": phone, "body": message},
                 )
                 result = resp.json()
                 logger.info(f"[WhatsApp] Text sent to {phone}: {result}")
@@ -87,8 +86,7 @@ class WhatsAppService:
             async with httpx.AsyncClient(timeout=30) as client:
                 resp = await client.post(
                     f"{self.api_url}/messages/image",
-                    params={"token": self.token},
-                    json={"to": phone, "image": image_url, "caption": caption},
+                    data={"token": self.token, "to": phone, "image": image_url, "caption": caption},
                 )
                 result = resp.json()
                 success = str(result.get("sent", "")).lower() == "true"
@@ -109,8 +107,7 @@ class WhatsAppService:
             async with httpx.AsyncClient(timeout=30) as client:
                 resp = await client.post(
                     f"{self.api_url}/messages/video",
-                    params={"token": self.token},
-                    json={"to": phone, "video": video_url, "caption": caption},
+                    data={"token": self.token, "to": phone, "video": video_url, "caption": caption},
                 )
                 result = resp.json()
                 success = str(result.get("sent", "")).lower() == "true"
@@ -130,8 +127,7 @@ class WhatsAppService:
             async with httpx.AsyncClient(timeout=30) as client:
                 resp = await client.post(
                     f"{self.api_url}/messages/document",
-                    params={"token": self.token},
-                    json={"to": phone, "document": document_url, "filename": filename, "caption": caption},
+                    data={"token": self.token, "to": phone, "document": document_url, "filename": filename, "caption": caption},
                 )
                 result = resp.json()
                 success = str(result.get("sent", "")).lower() == "true"
