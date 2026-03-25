@@ -25,17 +25,28 @@ class WhatsAppService:
     """WhatsApp Business API client."""
 
     def __init__(self):
-        self.api_url = settings.WHATSAPP_API_URL
-        self.token = settings.WHATSAPP_API_TOKEN
-        self.instance_id = settings.WHATSAPP_INSTANCE_ID
+        # Strip hidden whitespace/newlines that may come from env vars copy-paste
+        self.api_url = settings.WHATSAPP_API_URL.strip().rstrip('/')
+        self.token = settings.WHATSAPP_API_TOKEN.strip()
+        self.instance_id = settings.WHATSAPP_INSTANCE_ID.strip()
         self.enabled = settings.WHATSAPP_ENABLED
+        if self.enabled and not self.api_url.startswith("http"):
+            logger.error(
+                f"[WhatsApp] WHATSAPP_API_URL is invalid: {repr(self.api_url)!r}. "
+                "Check Render env vars."
+            )
+            self.enabled = False
 
     def _format_phone(self, phone: str) -> str:
         """Format phone to international format (966XXXXXXXXX)."""
-        phone = phone.strip().replace(" ", "").replace("-", "").replace("+", "")
+        import re
+        # Strip EVERYTHING except ASCII digits (removes Arabic chars, spaces, hidden Unicode, newlines, etc.)
+        phone = re.sub(r'[^\d]', '', phone)
         if phone.startswith("05"):
             phone = "966" + phone[1:]
         elif phone.startswith("5") and len(phone) == 9:
+            phone = "966" + phone
+        elif not phone.startswith("966"):
             phone = "966" + phone
         return phone
 
@@ -46,10 +57,12 @@ class WhatsAppService:
             return {"success": True, "simulated": True}
 
         phone = self._format_phone(phone)
+        url = f"{self.api_url}/messages/chat"
+        logger.info(f"[WhatsApp] POST {url} → to={phone}")
         try:
             async with httpx.AsyncClient(timeout=30) as client:
                 resp = await client.post(
-                    f"{self.api_url}/messages/chat",
+                    url,
                     data={
                         "token": self.token,
                         "to": phone,
