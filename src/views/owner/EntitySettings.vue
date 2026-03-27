@@ -110,16 +110,24 @@
                     {{ rule.is_active ? 'مفعّلة' : 'معطّلة' }}
                   </span>
                 </div>
-                <button
-                  @click="toggleEntity(rule)"
-                  :disabled="toggling === rule.id"
-                  class="text-sm px-3 py-1.5 rounded-lg border transition-colors cursor-pointer"
-                  :class="rule.is_active
-                    ? 'border-danger/30 text-danger hover:bg-danger/5'
-                    : 'border-success/30 text-success hover:bg-success/5'"
-                >
-                  {{ rule.is_active ? 'تعطيل' : 'تفعيل' }}
-                </button>
+                <div class="flex items-center gap-2">
+                  <button
+                    @click="openEdit(rule)"
+                    class="text-sm px-3 py-1.5 rounded-lg border border-blue/30 text-blue hover:bg-blue/5 transition-colors cursor-pointer"
+                  >
+                    تعديل
+                  </button>
+                  <button
+                    @click="toggleEntity(rule)"
+                    :disabled="toggling === rule.id"
+                    class="text-sm px-3 py-1.5 rounded-lg border transition-colors cursor-pointer"
+                    :class="rule.is_active
+                      ? 'border-danger/30 text-danger hover:bg-danger/5'
+                      : 'border-success/30 text-success hover:bg-success/5'"
+                  >
+                    {{ rule.is_active ? 'تعطيل' : 'تفعيل' }}
+                  </button>
+                </div>
               </div>
 
               <!-- Priority & facility types -->
@@ -266,6 +274,123 @@
       </Transition>
     </main>
   </div>
+
+  <!-- Edit Modal -->
+  <Teleport to="body">
+    <div v-if="editRule" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/40 overflow-y-auto" @click.self="editRule = null">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl my-6 p-6" @click.stop>
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-lg font-bold text-brand">تعديل: {{ editRule.entity_name }}</h3>
+          <button @click="editRule = null" class="text-text-light hover:text-danger cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div class="space-y-5">
+          <!-- Name + product name -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-text-light mb-1">اسم الجهة</label>
+              <input v-model="editForm.entity_name" class="w-full px-3 py-2 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-text-light mb-1">اسم المنتج</label>
+              <input v-model="editForm.product_name" class="w-full px-3 py-2 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" />
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label class="block text-xs font-medium text-text-light mb-1">شرح / الوصف</label>
+            <textarea v-model="editForm.description" rows="3" class="w-full px-3 py-2 text-sm border border-border rounded-xl focus:outline-none focus:border-blue resize-none" placeholder="شرح عن هذه الجهة ومتطلباتها..."></textarea>
+          </div>
+
+          <!-- Required docs -->
+          <div>
+            <label class="block text-xs font-medium text-text-light mb-2">المستندات المطلوبة</label>
+            <div class="space-y-2 mb-2">
+              <div v-for="(doc, i) in editForm.required_docs" :key="i" class="flex items-center gap-2">
+                <input
+                  v-model="editForm.required_docs[i]"
+                  class="flex-1 px-3 py-1.5 text-sm border border-border rounded-xl focus:outline-none focus:border-blue"
+                  :placeholder="'مستند ' + (i+1)"
+                />
+                <button @click="removeDoc(i)" class="text-danger hover:text-red-700 cursor-pointer flex-shrink-0">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+            </div>
+            <button @click="addDoc" class="text-sm text-blue hover:underline cursor-pointer flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              إضافة مستند
+            </button>
+          </div>
+
+          <!-- Key thresholds -->
+          <details class="border border-border rounded-xl">
+            <summary class="px-4 py-3 text-sm font-semibold text-brand cursor-pointer">معايير القبول (اختياري)</summary>
+            <div class="px-4 pb-4 pt-2 grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-text-light mb-1">عمر السجل الأدنى (شهر)</label>
+                <input type="number" v-model.number="editForm.min_age_months" class="w-full px-3 py-1.5 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-text-light mb-1">أقصى عدد شركاء</label>
+                <input type="number" v-model.number="editForm.max_partners" class="w-full px-3 py-1.5 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" placeholder="بلا حد" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-text-light mb-1">حد إيداعات راجحي (ر.س)</label>
+                <input type="number" v-model.number="editForm.min_pos_rajhi" class="w-full px-3 py-1.5 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-text-light mb-1">حد إيداعات أخرى (ر.س)</label>
+                <input type="number" v-model.number="editForm.min_pos_other" class="w-full px-3 py-1.5 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-text-light mb-1">حد إجمالي الإيداعات (ر.س)</label>
+                <input type="number" v-model.number="editForm.min_total_deposits" class="w-full px-3 py-1.5 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-text-light mb-1">حد إجمالي الإيرادات (ر.س)</label>
+                <input type="number" v-model.number="editForm.min_total_revenue" class="w-full px-3 py-1.5 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" />
+              </div>
+              <div class="col-span-2 flex gap-4">
+                <label class="flex items-center gap-2 cursor-pointer text-sm">
+                  <input type="checkbox" v-model="editForm.requires_pos" class="w-4 h-4" />
+                  يتطلب POS
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm">
+                  <input type="checkbox" v-model="editForm.requires_invoices" class="w-4 h-4" />
+                  يتطلب فواتير
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm">
+                  <input type="checkbox" v-model="editForm.accepts_foreign" class="w-4 h-4" />
+                  يقبل أجانب
+                </label>
+              </div>
+            </div>
+          </details>
+
+          <!-- Error -->
+          <p v-if="editError" class="text-sm text-danger">{{ editError }}</p>
+
+          <!-- Actions -->
+          <div class="flex gap-2 pt-1">
+            <button
+              @click="saveEdit"
+              :disabled="editSaving"
+              class="flex-1 py-2.5 rounded-xl bg-blue text-white text-sm font-semibold hover:bg-blue/90 transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              {{ editSaving ? 'جاري الحفظ...' : 'حفظ التعديلات' }}
+            </button>
+            <button @click="editRule = null" class="px-5 py-2.5 rounded-xl bg-gray-100 text-text-light text-sm hover:bg-gray-200 transition-colors cursor-pointer">
+              إلغاء
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -376,6 +501,73 @@ async function toggleEntity(rule: any) {
     error.value = e.message || 'فشل في تغيير الحالة'
   } finally {
     toggling.value = null
+  }
+}
+
+// Edit modal
+const editRule = ref<any>(null)
+const editSaving = ref(false)
+const editError = ref('')
+const editForm = ref<any>({})
+
+function openEdit(rule: any) {
+  editRule.value = rule
+  editError.value = ''
+  editForm.value = {
+    entity_name: rule.entity_name,
+    product_name: rule.product_name,
+    description: rule.description || '',
+    required_docs: [...(rule.required_docs || [])],
+    min_age_months: rule.min_age_months,
+    max_partners: rule.max_partners ?? '',
+    min_pos_rajhi: rule.min_pos_rajhi ?? '',
+    min_pos_other: rule.min_pos_other ?? '',
+    min_total_deposits: rule.min_total_deposits ?? '',
+    min_total_revenue: rule.min_total_revenue ?? '',
+    requires_pos: rule.requires_pos,
+    requires_invoices: rule.requires_invoices,
+    accepts_foreign: rule.accepts_foreign,
+  }
+}
+
+function addDoc() {
+  editForm.value.required_docs.push('')
+}
+
+function removeDoc(i: number) {
+  editForm.value.required_docs.splice(i, 1)
+}
+
+async function saveEdit() {
+  if (!editRule.value) return
+  editError.value = ''
+  editSaving.value = true
+  try {
+    const payload: any = {
+      entity_name: editForm.value.entity_name,
+      product_name: editForm.value.product_name,
+      description: editForm.value.description,
+      required_docs: editForm.value.required_docs.filter((d: string) => d.trim()),
+      min_age_months: editForm.value.min_age_months,
+      max_partners: editForm.value.max_partners === '' ? null : Number(editForm.value.max_partners),
+      min_pos_rajhi: editForm.value.min_pos_rajhi === '' ? null : Number(editForm.value.min_pos_rajhi),
+      min_pos_other: editForm.value.min_pos_other === '' ? null : Number(editForm.value.min_pos_other),
+      min_total_deposits: editForm.value.min_total_deposits === '' ? null : Number(editForm.value.min_total_deposits),
+      min_total_revenue: editForm.value.min_total_revenue === '' ? null : Number(editForm.value.min_total_revenue),
+      requires_pos: editForm.value.requires_pos,
+      requires_invoices: editForm.value.requires_invoices,
+      accepts_foreign: editForm.value.accepts_foreign,
+    }
+    const updated = await entityRulesApi.update(editRule.value.id, payload)
+    // Update in-place
+    const idx = localRules.value.findIndex(r => r.id === editRule.value.id)
+    if (idx !== -1) localRules.value[idx] = { ...localRules.value[idx], ...updated }
+    editRule.value = null
+    showToast(`تم حفظ تعديلات ${updated.entity_name}`)
+  } catch (e: any) {
+    editError.value = e.message || 'فشل في حفظ التعديلات'
+  } finally {
+    editSaving.value = false
   }
 }
 
