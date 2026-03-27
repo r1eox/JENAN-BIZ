@@ -442,21 +442,18 @@ async def _sync_entity_rules():
             r.product_code: r for r in existing_result.scalars().all()
         }
 
-        created = updated = 0
+        created = skipped = 0
         for rule_data in desired:
             code = rule_data["product_code"]
             if code in existing_map:
-                # Update all fields
-                rule = existing_map[code]
-                for k, v in rule_data.items():
-                    setattr(rule, k, v)
-                updated += 1
+                # Already exists — never overwrite manual edits from the UI
+                skipped += 1
             else:
                 db.add(EntityRule(**rule_data))
                 created += 1
 
         await db.commit()
-        logger.info(f"Entity rules synced: {created} created, {updated} updated")
+        logger.info(f"Entity rules synced: {created} created, {skipped} skipped (preserved)")
 
 
 
