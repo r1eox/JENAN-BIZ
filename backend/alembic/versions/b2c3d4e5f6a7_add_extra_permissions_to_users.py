@@ -17,17 +17,9 @@ depends_on = None
 
 
 def upgrade() -> None:
-    bind = op.get_bind()
-    if bind.dialect.name == "postgresql":
-        op.add_column(
-            'users',
-            sa.Column('extra_permissions', JSONB, nullable=False, server_default='[]')
-        )
-    else:
-        op.add_column(
-            'users',
-            sa.Column('extra_permissions', sa.JSON, nullable=False, server_default='[]')
-        )
+    op.execute(
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS extra_permissions JSONB NOT NULL DEFAULT '[]'"
+    )
 
 
 def downgrade() -> None:

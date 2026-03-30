@@ -18,9 +18,8 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        'cases',
-        sa.Column('completion_required_docs', JSONB, nullable=True)
+    op.execute(
+        "ALTER TABLE cases ADD COLUMN IF NOT EXISTS completion_required_docs JSONB"
     )
 
 
