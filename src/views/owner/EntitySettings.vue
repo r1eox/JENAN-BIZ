@@ -466,6 +466,25 @@
             </div>
           </div>
 
+          <!-- Facility types -->
+          <div>
+            <label class="block text-xs font-medium text-text-light mb-2">أنواع التسهيلات <span class="text-danger">*</span></label>
+            <div class="flex gap-4">
+              <label class="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="checkbox" :checked="editForm.facility_types?.includes('pos')" @change="toggleEditFacility('pos')" class="w-4 h-4" />
+                نقاط بيع (POS)
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="checkbox" :checked="editForm.facility_types?.includes('cash')" @change="toggleEditFacility('cash')" class="w-4 h-4" />
+                كاش
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="checkbox" :checked="editForm.facility_types?.includes('fleet')" @change="toggleEditFacility('fleet')" class="w-4 h-4" />
+                أسطول
+              </label>
+            </div>
+          </div>
+
           <!-- Description -->
           <div>
             <label class="block text-xs font-medium text-text-light mb-1">شرح / الوصف</label>
@@ -715,6 +734,13 @@ function toggleFacility(ft: string) {
   else if (arr.length > 1) arr.splice(idx, 1)
 }
 
+function toggleEditFacility(ft: string) {
+  const arr: string[] = editForm.value.facility_types
+  const idx = arr.indexOf(ft)
+  if (idx === -1) arr.push(ft)
+  else if (arr.length > 1) arr.splice(idx, 1)
+}
+
 async function saveCreate() {
   createError.value = ''
   if (!createForm.value.entity_name.trim()) { createError.value = 'اسم الجهة مطلوب'; return }
@@ -764,6 +790,7 @@ function openEdit(rule: any) {
   editForm.value = {
     entity_name: rule.entity_name,
     product_name: rule.product_name,
+    facility_types: [...(rule.facility_types || ['pos'])],
     description: rule.description || '',
     required_docs: [...(rule.required_docs || [])],
     min_age_months: rule.min_age_months,
@@ -794,6 +821,7 @@ async function saveEdit() {
     const payload: any = {
       entity_name: editForm.value.entity_name,
       product_name: editForm.value.product_name,
+      facility_types: editForm.value.facility_types,
       description: editForm.value.description,
       required_docs: editForm.value.required_docs.filter((d: string) => d.trim()),
       min_age_months: editForm.value.min_age_months,
