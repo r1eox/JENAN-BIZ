@@ -85,25 +85,43 @@ def require_owner() -> Callable:
 
 # All available permissions with Arabic labels
 ALL_PERMISSIONS: dict[str, str] = {
-    "approve_partners":    "الموافقة على طلبات تسجيل الشركاء",
-    "view_all_cases":      "مراجعة جميع الملفات والطلبات",
-    "update_case_stages":  "تحديث مراحل الملفات (تقديم، موافقة، اعتماد...)",
-    "manage_users":        "إضافة وتعديل المستخدمين",
-    "promote_roles":       "ترقية وتغيير أدوار المستخدمين",
-    "manage_entities":     "إضافة وتعديل الجهات التمويلية",
-    "send_campaigns":      "إرسال الحملات التسويقية عبر واتساب",
-    "view_analytics":      "عرض الإحصائيات والتقارير",
+    # ── المستخدمون ──
+    "add_users":           "إضافة مستخدمين جدد",
+    "edit_users":          "تعديل بيانات المستخدمين",
+    "promote_roles":       "ترقية الأدوار (موظف ← مشرف ← مالك)",
+    "approve_partners":    "الموافقة على طلبات تسجيل الشركاء ورفضها",
     "manage_permissions":  "إدارة صلاحيات المستخدمين",
+    # ── الملفات والطلبات ──
+    "view_partner_files":  "الاطلاع على ملفات وطلبات الشركاء",
+    "view_employee_files": "الاطلاع على ملفات وأعمال الموظفين",
+    "update_case_stages":  "رفع مراحل الملفات (تقديم ← موافقة ← اعتماد...)",
+    "assign_cases":        "تعيين الملفات على موظفين",
+    "view_all_cases":      "مراجعة جميع الملفات والطلبات",
+    # ── الجهات التمويلية ──
+    "add_entities":        "إضافة جهات تمويلية جديدة",
+    "edit_entities":       "تعديل بيانات الجهات التمويلية",
+    # ── التسويق ──
+    "send_campaigns":      "إنشاء وإرسال الحملات التسويقية عبر واتساب",
+    # ── التقارير ──
+    "view_analytics":      "عرض الإحصائيات والتقارير",
 }
 
 # Default permissions per role
 ROLE_DEFAULT_PERMISSIONS: dict[str, list[str]] = {
     "partner":    [],
-    "employee":   [],
-    "supervisor": [
-        "approve_partners",
-        "view_all_cases",
+    "employee":   [
+        "view_partner_files",
         "update_case_stages",
+    ],
+    "supervisor": [
+        "add_users",
+        "edit_users",
+        "approve_partners",
+        "view_partner_files",
+        "view_employee_files",
+        "update_case_stages",
+        "assign_cases",
+        "view_all_cases",
         "view_analytics",
     ],
     "owner": list(ALL_PERMISSIONS.keys()),  # owner always has everything
