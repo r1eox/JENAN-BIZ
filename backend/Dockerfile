@@ -24,4 +24,4 @@ RUN mkdir -p /app/uploads /tmp/uploads && chmod 755 /app/uploads /tmp/uploads
 EXPOSE 8000
 
 # Render sets $PORT dynamically; fall back to 8000 for local Docker
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
