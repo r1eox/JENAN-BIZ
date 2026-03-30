@@ -102,6 +102,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/owner/CampaignManager.vue'),
     meta: { requiresAuth: true, roles: ['owner'] },
   },
+  {
+    path: '/owner/permissions',
+    name: 'PermissionsManager',
+    component: () => import('../views/owner/PermissionsManager.vue'),
+    meta: { requiresAuth: true, roles: ['owner'] },
+  },
 
   // ─── Shared ──────────────────────────
   {

@@ -9,6 +9,7 @@
         </div>
         <div class="flex items-center gap-3">
           <NotificationBell />
+          <router-link to="/owner/permissions" class="text-sm text-text-light hover:text-blue transition-colors">الصلاحيات</router-link>
           <router-link to="/owner/entities" class="text-sm text-text-light hover:text-blue transition-colors">الجهات</router-link>
           <router-link to="/owner/campaigns" class="text-sm text-text-light hover:text-blue transition-colors">الحملات</router-link>
           <button @click="handleLogout" class="text-text-light hover:text-danger transition-colors cursor-pointer p-1">

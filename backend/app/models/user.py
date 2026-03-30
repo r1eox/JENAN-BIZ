@@ -9,7 +9,7 @@ from sqlalchemy import String, Boolean, DateTime, Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column
 import enum
 
-from app.compat import GUID
+from app.compat import GUID, JSONType
 
 from app.database import Base
 
@@ -34,6 +34,9 @@ class User(Base):
         SAEnum(UserRole, name="user_role_enum"), nullable=False, default=UserRole.partner
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # Extra permissions beyond the role's defaults (owner can grant these)
+    extra_permissions: Mapped[list] = mapped_column(JSONType, default=list, nullable=False, server_default="[]")
 
     # OTP for password reset
     otp_code: Mapped[str | None] = mapped_column(String(6), nullable=True, default=None)

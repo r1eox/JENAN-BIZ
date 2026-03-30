@@ -81,6 +81,63 @@ def require_owner() -> Callable:
     return require_role("owner")
 
 
+# ─── Granular Permissions System ──────────────────────
+
+# All available permissions with Arabic labels
+ALL_PERMISSIONS: dict[str, str] = {
+    "approve_partners":    "الموافقة على طلبات تسجيل الشركاء",
+    "view_all_cases":      "مراجعة جميع الملفات والطلبات",
+    "update_case_stages":  "تحديث مراحل الملفات (تقديم، موافقة، اعتماد...)",
+    "manage_users":        "إضافة وتعديل المستخدمين",
+    "promote_roles":       "ترقية وتغيير أدوار المستخدمين",
+    "manage_entities":     "إضافة وتعديل الجهات التمويلية",
+    "send_campaigns":      "إرسال الحملات التسويقية عبر واتساب",
+    "view_analytics":      "عرض الإحصائيات والتقارير",
+    "manage_permissions":  "إدارة صلاحيات المستخدمين",
+}
+
+# Default permissions per role
+ROLE_DEFAULT_PERMISSIONS: dict[str, list[str]] = {
+    "partner":    [],
+    "employee":   [],
+    "supervisor": [
+        "approve_partners",
+        "view_all_cases",
+        "update_case_stages",
+        "view_analytics",
+    ],
+    "owner": list(ALL_PERMISSIONS.keys()),  # owner always has everything
+}
+
+
+def has_permission(user: "User", permission: str) -> bool:
+    """Check if user has a specific permission (role default OR extra grant)."""
+    if user.role == UserRole.owner:
+        return True
+    role_perms = ROLE_DEFAULT_PERMISSIONS.get(user.role.value, [])
+    extra = user.extra_permissions or []
+    return permission in role_perms or permission in extra
+
+
+def require_permission(permission: str) -> Callable:
+    """
+    Dependency factory — require a named permission.
+    Checks both role defaults and extra_permissions granted by owner.
+
+    Usage:
+        @router.post("/", dependencies=[Depends(require_permission("manage_users"))])
+    """
+    async def _check(user: User = Depends(get_current_user)):
+        if not has_permission(user, permission):
+            label = ALL_PERMISSIONS.get(permission, permission)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"ليس لديك صلاحية: {label}",
+            )
+        return user
+    return _check
+
+
 # ─── Fine-grained permission checks (helpers) ──────────
 
 def can_see_entity_names(user: User) -> bool:

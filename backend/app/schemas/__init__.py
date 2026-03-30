@@ -38,6 +38,7 @@ class UserResponse(BaseModel):
     role: str
     is_active: bool
     created_at: datetime
+    extra_permissions: list[str] = []
 
     model_config = {"from_attributes": True}
 

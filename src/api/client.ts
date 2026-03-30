@@ -142,6 +142,7 @@ export interface UserResponse {
   role: string
   is_active: boolean
   created_at: string
+  extra_permissions?: string[]
 }
 
 export interface TokenResponse {
@@ -542,6 +543,22 @@ export const usersApi = {
 
   async rejectUser(userId: string): Promise<{ status: string }> {
     return request('POST', `/users/${userId}/reject`)
+  },
+}
+
+// ─── Permissions API ─────────────────────────────────
+
+export const permissionsApi = {
+  async getDefinitions(): Promise<{ all_permissions: { key: string; label: string }[]; role_defaults: Record<string, string[]> }> {
+    return request('GET', '/users/permissions/definitions')
+  },
+
+  async getUserPermissions(userId: string): Promise<any> {
+    return request('GET', `/users/${userId}/permissions`)
+  },
+
+  async update(userId: string, extraPermissions: string[]): Promise<{ user_id: string; user_name: string; role: string; extra_permissions: string[] }> {
+    return request('PATCH', `/users/${userId}/permissions`, { extra_permissions: extraPermissions })
   },
 }
 

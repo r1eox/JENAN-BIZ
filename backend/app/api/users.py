@@ -12,7 +12,7 @@ from app.models.user import User, UserRole
 from app.models.audit import AuditLog, AuditAction, Notification, NotificationType
 from app.schemas import UserResponse, UserCreate, UserUpdate, UserListResponse
 from app.core import hash_password
-from app.core.rbac import get_current_user, require_role
+from app.core.rbac import get_current_user, require_role, ALL_PERMISSIONS, ROLE_DEFAULT_PERMISSIONS
 from app.core.dependencies import PaginationParams
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -247,3 +247,99 @@ async def deactivate_user(
 
     await db.commit()
     return {"status": "deactivated"}
+
+
+# ─── Permissions Endpoints ────────────────────────────
+
+from pydantic import BaseModel as _PermBaseModel
+
+class PermissionsUpdate(_PermBaseModel):
+    extra_permissions: list[str]
+
+
+@router.get("/permissions/definitions")
+async def get_permission_definitions(
+    current_user: User = Depends(require_role("owner")),
+):
+    """Return all available permission keys with Arabic labels and role defaults."""
+    return {
+        "all_permissions": [
+            {"key": k, "label": v}
+            for k, v in ALL_PERMISSIONS.items()
+        ],
+        "role_defaults": ROLE_DEFAULT_PERMISSIONS,
+    }
+
+
+@router.get("/{user_id}/permissions")
+async def get_user_permissions(
+    user_id: uuid.UUID,
+    current_user: User = Depends(require_role("owner")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get current permissions for a user (role defaults + extra granted)."""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(404, "المستخدم غير موجود")
+
+    role_perms = ROLE_DEFAULT_PERMISSIONS.get(user.role.value, [])
+    extra = user.extra_permissions or []
+    all_perms = list(set(role_perms) | set(extra))
+
+    return {
+        "user_id": str(user.id),
+        "user_name": user.name,
+        "role": user.role.value,
+        "role_permissions": role_perms,
+        "extra_permissions": extra,
+        "effective_permissions": all_perms,
+    }
+
+
+@router.patch("/{user_id}/permissions")
+async def update_user_permissions(
+    user_id: uuid.UUID,
+    body: PermissionsUpdate,
+    current_user: User = Depends(require_role("owner")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Grant or revoke extra permissions for a user (beyond their role defaults)."""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(404, "المستخدم غير موجود")
+
+    if user.role == UserRole.owner:
+        raise HTTPException(400, "المالك لديه جميع الصلاحيات افتراضياً")
+
+    # Validate permission keys
+    invalid = [p for p in body.extra_permissions if p not in ALL_PERMISSIONS]
+    if invalid:
+        raise HTTPException(400, f"صلاحيات غير معروفة: {', '.join(invalid)}")
+
+    old_perms = user.extra_permissions or []
+    user.extra_permissions = body.extra_permissions
+
+    db.add(AuditLog(
+        user_id=current_user.id,
+        user_name=current_user.name,
+        user_role=current_user.role.value,
+        action=AuditAction.user_updated,
+        details={
+            "target_user_id": str(user_id),
+            "action": "permissions_updated",
+            "old_extra_permissions": old_perms,
+            "new_extra_permissions": body.extra_permissions,
+        },
+    ))
+
+    await db.commit()
+    await db.refresh(user)
+
+    return {
+        "user_id": str(user.id),
+        "user_name": user.name,
+        "role": user.role.value,
+        "extra_permissions": user.extra_permissions or [],
+    }
