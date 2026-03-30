@@ -163,19 +163,19 @@ def can_see_entity_names(user: User) -> bool:
 
 
 def can_advance_stage(user: User) -> bool:
-    return user.role in (UserRole.employee, UserRole.supervisor, UserRole.owner)
+    return user.role in (UserRole.employee, UserRole.supervisor, UserRole.owner) or has_permission(user, 'update_case_stages')
 
 
 def can_approve_transitions(user: User) -> bool:
-    return user.role in (UserRole.supervisor, UserRole.owner)
+    return user.role in (UserRole.supervisor, UserRole.owner) or has_permission(user, 'update_case_stages')
 
 
 def can_reject_case(user: User) -> bool:
-    return user.role in (UserRole.supervisor, UserRole.owner)
+    return user.role in (UserRole.supervisor, UserRole.owner) or has_permission(user, 'update_case_stages')
 
 
 def can_assign_cases(user: User) -> bool:
-    return user.role in (UserRole.supervisor, UserRole.owner)
+    return user.role in (UserRole.supervisor, UserRole.owner) or has_permission(user, 'assign_cases')
 
 
 def can_request_completion(user: User) -> bool:

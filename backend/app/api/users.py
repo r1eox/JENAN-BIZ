@@ -12,7 +12,7 @@ from app.models.user import User, UserRole
 from app.models.audit import AuditLog, AuditAction, Notification, NotificationType
 from app.schemas import UserResponse, UserCreate, UserUpdate, UserListResponse
 from app.core import hash_password
-from app.core.rbac import get_current_user, require_role, ALL_PERMISSIONS, ROLE_DEFAULT_PERMISSIONS
+from app.core.rbac import get_current_user, require_role, require_permission, ALL_PERMISSIONS, ROLE_DEFAULT_PERMISSIONS
 from app.core.dependencies import PaginationParams
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 async def list_users(
     role: str | None = None,
     pagination: PaginationParams = Depends(),
-    current_user: User = Depends(require_role("supervisor", "owner")),
+    current_user: User = Depends(require_permission("view_employee_files")),
     db: AsyncSession = Depends(get_db),
 ):
     query = select(User)
@@ -46,7 +46,7 @@ async def list_users(
 
 @router.get("/employees")
 async def list_employees(
-    current_user: User = Depends(require_role("supervisor", "owner")),
+    current_user: User = Depends(require_permission("assign_cases")),
     db: AsyncSession = Depends(get_db),
 ):
     """Quick list of active employees for assignment dropdowns."""
@@ -64,7 +64,7 @@ async def list_employees(
 
 @router.get("/pending", response_model=UserListResponse)
 async def list_pending_partners(
-    current_user: User = Depends(require_role("owner")),
+    current_user: User = Depends(require_permission("approve_partners")),
     db: AsyncSession = Depends(get_db),
 ):
     """List partners awaiting approval (is_active=False)."""
@@ -84,7 +84,7 @@ async def list_pending_partners(
 @router.post("/{user_id}/approve")
 async def approve_partner(
     user_id: uuid.UUID,
-    current_user: User = Depends(require_role("owner")),
+    current_user: User = Depends(require_permission("approve_partners")),
     db: AsyncSession = Depends(get_db),
 ):
     """Approve a pending partner registration."""
@@ -123,7 +123,7 @@ async def approve_partner(
 @router.post("/{user_id}/reject")
 async def reject_partner(
     user_id: uuid.UUID,
-    current_user: User = Depends(require_role("owner")),
+    current_user: User = Depends(require_permission("approve_partners")),
     db: AsyncSession = Depends(get_db),
 ):
     """Reject and delete a pending partner registration."""
@@ -154,7 +154,7 @@ async def reject_partner(
 @router.post("/", response_model=UserResponse, status_code=201)
 async def create_user(
     body: UserCreate,
-    current_user: User = Depends(require_role("owner")),
+    current_user: User = Depends(require_permission("add_users")),
     db: AsyncSession = Depends(get_db),
 ):
     # Check duplicate
@@ -189,7 +189,7 @@ async def create_user(
 async def update_user(
     user_id: uuid.UUID,
     body: UserUpdate,
-    current_user: User = Depends(require_role("owner")),
+    current_user: User = Depends(require_permission("edit_users")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(User).where(User.id == user_id))

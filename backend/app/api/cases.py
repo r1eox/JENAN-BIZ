@@ -30,7 +30,7 @@ from app.schemas.case import (
     OverrideRequest, OverrideResponse, OwnerAnalyticsResponse,
 )
 from app.core.rbac import (
-    get_current_user, require_role,
+    get_current_user, require_role, require_permission,
     can_see_entity_names, can_advance_stage,
     can_approve_transitions, can_reject_case, can_assign_cases,
 )
@@ -626,7 +626,7 @@ async def request_completion(
 
 @router.get("/stats/kpi", response_model=KPIResponse)
 async def get_kpis(
-    current_user: User = Depends(require_role("supervisor", "owner")),
+    current_user: User = Depends(require_permission("view_analytics")),
     db: AsyncSession = Depends(get_db),
 ):
     from datetime import timedelta

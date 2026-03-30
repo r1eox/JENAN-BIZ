@@ -25,6 +25,91 @@
     </header>
 
     <main class="max-w-4xl mx-auto px-4 pb-8">
+      <!-- Quick Access — shown only if employee has elevated permissions -->
+      <div v-if="hasPermission('approve_partners') || hasPermission('assign_cases') || hasPermission('view_analytics') || hasPermission('send_campaigns') || hasPermission('add_users')"
+           class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+
+        <!-- Approve Partners -->
+        <button v-if="hasPermission('approve_partners')"
+          @click="showPendingPartners = !showPendingPartners"
+          class="bg-white rounded-2xl border p-3 text-center hover:border-blue/40 transition-all cursor-pointer"
+          :class="showPendingPartners ? 'border-blue' : 'border-border'">
+          <div class="relative inline-block">
+            <svg class="w-6 h-6 mx-auto text-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/>
+            </svg>
+            <span v-if="pendingPartners.length > 0"
+              class="absolute -top-1 -right-1 w-4 h-4 text-[10px] font-bold bg-danger text-white rounded-full flex items-center justify-center">
+              {{ pendingPartners.length }}
+            </span>
+          </div>
+          <p class="text-xs font-bold text-brand mt-1">موافقة الشركاء</p>
+        </button>
+
+        <!-- View Analytics -->
+        <router-link v-if="hasPermission('view_analytics')" to="/supervisor"
+          class="bg-white rounded-2xl border border-border p-3 text-center hover:border-blue/40 transition-all">
+          <svg class="w-6 h-6 mx-auto text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+          <p class="text-xs font-bold text-brand mt-1">التقارير</p>
+        </router-link>
+
+        <!-- Add Users -->
+        <router-link v-if="hasPermission('add_users')" to="/supervisor"
+          class="bg-white rounded-2xl border border-border p-3 text-center hover:border-blue/40 transition-all">
+          <svg class="w-6 h-6 mx-auto text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+          </svg>
+          <p class="text-xs font-bold text-brand mt-1">إدارة المستخدمين</p>
+        </router-link>
+
+        <!-- Send Campaigns -->
+        <router-link v-if="hasPermission('send_campaigns')" to="/owner/campaigns"
+          class="bg-white rounded-2xl border border-border p-3 text-center hover:border-blue/40 transition-all">
+          <svg class="w-6 h-6 mx-auto text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+          </svg>
+          <p class="text-xs font-bold text-brand mt-1">الحملات</p>
+        </router-link>
+      </div>
+
+      <!-- Pending Partners Section -->
+      <div v-if="hasPermission('approve_partners') && showPendingPartners" class="mt-4 bg-white rounded-2xl border border-blue/30 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-bold text-brand">طلبات تسجيل الشركاء</h3>
+          <span class="text-xs font-bold bg-blue/10 text-blue px-2 py-0.5 rounded-full">{{ pendingPartners.length }}</span>
+        </div>
+        <div v-if="loadingPartners" class="text-center py-4">
+          <svg class="animate-spin w-5 h-5 mx-auto text-blue" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+          </svg>
+        </div>
+        <div v-else-if="pendingPartners.length === 0" class="text-center py-4 text-sm text-text-light">
+          لا توجد طلبات معلّقة
+        </div>
+        <div v-else class="space-y-2">
+          <div v-for="p in pendingPartners" :key="p.id"
+               class="flex items-center justify-between p-3 bg-bg rounded-xl border border-border">
+            <div>
+              <p class="text-sm font-bold text-brand">{{ p.name }}</p>
+              <p class="text-xs text-text-light">{{ p.phone }}</p>
+            </div>
+            <div class="flex gap-2">
+              <button @click="approvePartner(p.id)" :disabled="processingPartnerId === p.id"
+                class="text-xs font-bold bg-success/10 text-success px-3 py-1.5 rounded-lg hover:bg-success/20 transition-colors cursor-pointer disabled:opacity-50">
+                قبول
+              </button>
+              <button @click="rejectPartner(p.id)" :disabled="processingPartnerId === p.id"
+                class="text-xs font-bold bg-danger/10 text-danger px-3 py-1.5 rounded-lg hover:bg-danger/20 transition-colors cursor-pointer disabled:opacity-50">
+                رفض
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Tab navigation -->
       <div class="mt-4 flex gap-1 bg-white rounded-xl border border-border p-1 overflow-x-auto">
         <button
@@ -145,8 +230,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { currentUser, logout } from '../../stores/authStore'
-import { casesApi } from '../../api/client'
+import { currentUser, logout, hasPermission } from '../../stores/authStore'
+import { casesApi, usersApi } from '../../api/client'
 import type { CaseResponse } from '../../api/client'
 import { STAGE_MAP, getStageProgress } from '../../types/stages'
 import type { RequestStage } from '../../types/stages'
@@ -230,4 +315,43 @@ function formatDate(iso: string): string {
 
 function openCase(id: string) { router.push(`/case/${id}`) }
 function handleLogout() { logout(); router.push('/') }
+
+// ─── Approve Partners (permission-gated) ──────────────
+
+const pendingPartners = ref<any[]>([])
+const loadingPartners = ref(false)
+const showPendingPartners = ref(false)
+const processingPartnerId = ref<string | null>(null)
+
+async function loadPendingPartners() {
+  if (!hasPermission('approve_partners')) return
+  loadingPartners.value = true
+  try {
+    const resp = await usersApi.listPending()
+    pendingPartners.value = resp.items
+  } catch { /* silent */ }
+  loadingPartners.value = false
+}
+
+async function approvePartner(id: string) {
+  processingPartnerId.value = id
+  try {
+    await usersApi.approveUser(id)
+    pendingPartners.value = pendingPartners.value.filter(p => p.id !== id)
+  } catch { /* silent */ }
+  processingPartnerId.value = null
+}
+
+async function rejectPartner(id: string) {
+  processingPartnerId.value = id
+  try {
+    await usersApi.rejectUser(id)
+    pendingPartners.value = pendingPartners.value.filter(p => p.id !== id)
+  } catch { /* silent */ }
+  processingPartnerId.value = null
+}
+
+onMounted(() => {
+  loadPendingPartners()
+})
 </script>

@@ -5,6 +5,7 @@
 
 import { reactive, computed } from 'vue'
 import type { UserRole, User } from '../types/roles'
+import { ROLE_DEFAULT_PERMISSIONS } from '../types/roles'
 import type { RequestStage } from '../types/stages'
 import { isGatedStage } from '../types/stages'
 import { authApi, setTokens, clearTokens, getAccessToken } from '../api/client'
@@ -24,6 +25,7 @@ function mapApiUser(u: UserResponse): User {
     role: u.role as UserRole,
     phone: u.phone,
     createdAt: u.created_at,
+    extra_permissions: u.extra_permissions || [],
   }
 }
 
@@ -54,6 +56,20 @@ export const currentUser = computed(() => state.user)
 export const isLoggedIn = computed(() => !!state.user && !!getAccessToken())
 export const userRole = computed<UserRole | null>(() => state.user?.role ?? null)
 export const authLoading = computed(() => state.loading)
+
+/** Effective permissions = role defaults + extra grants */
+export const userPermissions = computed<string[]>(() => {
+  const u = state.user
+  if (!u) return []
+  const rolePerms = ROLE_DEFAULT_PERMISSIONS[u.role] || []
+  const extra = u.extra_permissions || []
+  return [...new Set([...rolePerms, ...extra])]
+})
+
+/** Check if current user has a specific permission */
+export function hasPermission(perm: string): boolean {
+  return userPermissions.value.includes(perm)
+}
 
 /** Real login — calls backend API */
 export async function login(phone: string, password: string): Promise<User> {

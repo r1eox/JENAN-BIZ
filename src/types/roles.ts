@@ -10,6 +10,23 @@ export interface User {
   role: UserRole
   phone: string
   createdAt: string
+  extra_permissions?: string[]
+}
+
+// Default permissions per role (mirrors backend ROLE_DEFAULT_PERMISSIONS)
+export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
+  partner: [],
+  employee: ['view_partner_files', 'update_case_stages'],
+  supervisor: [
+    'add_users', 'edit_users', 'approve_partners',
+    'view_partner_files', 'view_employee_files', 'update_case_stages',
+    'assign_cases', 'view_all_cases', 'view_analytics',
+  ],
+  owner: [
+    'add_users', 'edit_users', 'promote_roles', 'approve_partners', 'manage_permissions',
+    'view_partner_files', 'view_employee_files', 'update_case_stages', 'assign_cases',
+    'view_all_cases', 'add_entities', 'edit_entities', 'send_campaigns', 'view_analytics',
+  ],
 }
 
 export const ROLE_LABELS: Record<UserRole, string> = {

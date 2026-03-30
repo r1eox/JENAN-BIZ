@@ -1,13 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import type { UserRole } from '../types/roles'
-import { isLoggedIn, userRole } from '../stores/authStore'
+import { isLoggedIn, userRole, hasPermission } from '../stores/authStore'
 
 // ─── Route Meta Types ─────────────────────────────────
 declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean
     roles?: UserRole[]
+    permissions?: string[]  // allow access if user has ANY of these permissions
   }
 }
 
@@ -68,7 +69,7 @@ const routes: RouteRecordRaw[] = [
     path: '/supervisor',
     name: 'SupervisorDashboard',
     component: () => import('../views/supervisor/SupervisorDashboard.vue'),
-    meta: { requiresAuth: true, roles: ['supervisor', 'owner'] },
+    meta: { requiresAuth: true, roles: ['supervisor', 'owner'], permissions: ['view_analytics', 'view_all_cases', 'approve_partners'] },
   },
 
   // ─── Owner ───────────────────────────
@@ -162,6 +163,11 @@ router.beforeEach((to, _from, next) => {
   if (allowedRoles && allowedRoles.length > 0) {
     const role = userRole.value
     if (role && allowedRoles.includes(role)) {
+      return next()
+    }
+    // Check if user has any of the alternative permissions for this route
+    const altPermissions = to.meta.permissions as string[] | undefined
+    if (altPermissions && altPermissions.some(p => hasPermission(p))) {
       return next()
     }
     // Wrong role — redirect to their own dashboard
