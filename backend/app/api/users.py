@@ -259,7 +259,7 @@ class PermissionsUpdate(_PermBaseModel):
 
 @router.get("/permissions/definitions")
 async def get_permission_definitions(
-    current_user: User = Depends(require_role("owner")),
+    current_user: User = Depends(get_current_user),
 ):
     """Return all available permission keys with Arabic labels and role defaults."""
     return {
@@ -274,7 +274,7 @@ async def get_permission_definitions(
 @router.get("/{user_id}/permissions")
 async def get_user_permissions(
     user_id: uuid.UUID,
-    current_user: User = Depends(require_role("owner")),
+    current_user: User = Depends(require_permission("manage_permissions")),
     db: AsyncSession = Depends(get_db),
 ):
     """Get current permissions for a user (role defaults + extra granted)."""
@@ -301,7 +301,7 @@ async def get_user_permissions(
 async def update_user_permissions(
     user_id: uuid.UUID,
     body: PermissionsUpdate,
-    current_user: User = Depends(require_role("owner")),
+    current_user: User = Depends(require_permission("manage_permissions")),
     db: AsyncSession = Depends(get_db),
 ):
     """Grant or revoke extra permissions for a user (beyond their role defaults)."""
