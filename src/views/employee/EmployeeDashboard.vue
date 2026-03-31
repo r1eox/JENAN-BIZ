@@ -230,7 +230,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { currentUser, logout, hasPermission } from '../../stores/authStore'
+import { currentUser, logout, hasPermission, refreshProfile } from '../../stores/authStore'
 import { casesApi, usersApi } from '../../api/client'
 import type { CaseResponse } from '../../api/client'
 import { STAGE_MAP, getStageProgress } from '../../types/stages'
@@ -257,7 +257,12 @@ async function loadCases() {
   loading.value = false
 }
 
-onMounted(loadCases)
+onMounted(async () => {
+  // Get fresh user data (includes extra_permissions) then load cases
+  await refreshProfile()
+  await loadCases()
+  await loadPendingPartners()
+})
 
 const myCases = computed(() => cases.value.filter(c => c.assigned_to === userId.value))
 const unassigned = computed(() => cases.value.filter(c => !c.assigned_to && c.stage !== 'rejected' && c.stage !== 'fees_received'))
@@ -350,8 +355,4 @@ async function rejectPartner(id: string) {
   } catch { /* silent */ }
   processingPartnerId.value = null
 }
-
-onMounted(() => {
-  loadPendingPartners()
-})
 </script>
