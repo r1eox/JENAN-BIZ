@@ -26,11 +26,11 @@
 
     <main class="max-w-4xl mx-auto px-4 pb-8">
       <!-- Quick Access — shown only if employee has elevated permissions -->
-      <div v-if="hasPermission('approve_partners') || hasPermission('assign_cases') || hasPermission('view_analytics') || hasPermission('send_campaigns') || hasPermission('add_users')"
+      <div v-if="hasElevatedPerms"
            class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
 
         <!-- Approve Partners -->
-        <button v-if="hasPermission('approve_partners')"
+        <button v-if="canApprovePartners"
           @click="showPendingPartners = !showPendingPartners"
           class="bg-white rounded-2xl border p-3 text-center hover:border-blue/40 transition-all cursor-pointer"
           :class="showPendingPartners ? 'border-blue' : 'border-border'">
@@ -47,7 +47,7 @@
         </button>
 
         <!-- View Analytics -->
-        <router-link v-if="hasPermission('view_analytics')" to="/supervisor"
+        <router-link v-if="canViewAnalytics" to="/supervisor"
           class="bg-white rounded-2xl border border-border p-3 text-center hover:border-blue/40 transition-all">
           <svg class="w-6 h-6 mx-auto text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
@@ -56,7 +56,7 @@
         </router-link>
 
         <!-- Add Users -->
-        <router-link v-if="hasPermission('add_users')" to="/supervisor"
+        <router-link v-if="canAddUsers" to="/supervisor"
           class="bg-white rounded-2xl border border-border p-3 text-center hover:border-blue/40 transition-all">
           <svg class="w-6 h-6 mx-auto text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
@@ -65,7 +65,7 @@
         </router-link>
 
         <!-- Send Campaigns -->
-        <router-link v-if="hasPermission('send_campaigns')" to="/owner/campaigns"
+        <router-link v-if="canSendCampaigns" to="/owner/campaigns"
           class="bg-white rounded-2xl border border-border p-3 text-center hover:border-blue/40 transition-all">
           <svg class="w-6 h-6 mx-auto text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
@@ -75,7 +75,7 @@
       </div>
 
       <!-- Pending Partners Section -->
-      <div v-if="hasPermission('approve_partners') && showPendingPartners" class="mt-4 bg-white rounded-2xl border border-blue/30 p-4">
+      <div v-if="canApprovePartners && showPendingPartners" class="mt-4 bg-white rounded-2xl border border-blue/30 p-4">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-sm font-bold text-brand">طلبات تسجيل الشركاء</h3>
           <span class="text-xs font-bold bg-blue/10 text-blue px-2 py-0.5 rounded-full">{{ pendingPartners.length }}</span>
@@ -230,11 +230,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { currentUser, logout, hasPermission, refreshProfile } from '../../stores/authStore'
+import { currentUser, logout, refreshProfile } from '../../stores/authStore'
 import { casesApi, usersApi } from '../../api/client'
 import type { CaseResponse } from '../../api/client'
 import { STAGE_MAP, getStageProgress } from '../../types/stages'
 import type { RequestStage } from '../../types/stages'
+import type { UserRole } from '../../types/roles'
+import { ROLE_DEFAULT_PERMISSIONS } from '../../types/roles'
 import NotificationBell from '../../components/NotificationBell.vue'
 import ChangePasswordModal from '../../components/ChangePasswordModal.vue'
 
@@ -242,6 +244,26 @@ const router = useRouter()
 const showChangePass = ref(false)
 const userId = computed(() => currentUser.value?.id ?? '')
 const userName = computed(() => currentUser.value?.name ?? '')
+
+// ─── Local Permissions (computed from currentUser — fully reactive) ────────
+const myPerms = computed<string[]>(() => {
+  const u = currentUser.value
+  if (!u) return []
+  const role = u.role as UserRole
+  const rolePerms = ROLE_DEFAULT_PERMISSIONS[role] || []
+  const extra = u.extra_permissions || []
+  return [...new Set([...rolePerms, ...extra])]
+})
+
+const canApprovePartners = computed(() => myPerms.value.includes('approve_partners'))
+const canViewAnalytics   = computed(() => myPerms.value.includes('view_analytics'))
+const canAddUsers        = computed(() => myPerms.value.includes('add_users'))
+const canSendCampaigns   = computed(() => myPerms.value.includes('send_campaigns'))
+const canAssignCases     = computed(() => myPerms.value.includes('assign_cases'))
+const hasElevatedPerms   = computed(() =>
+  canApprovePartners.value || canViewAnalytics.value ||
+  canAddUsers.value || canSendCampaigns.value || canAssignCases.value
+)
 
 type TabKey = 'assigned' | 'unassigned' | 'need_info' | 'all'
 const activeTab = ref<TabKey>('all')
@@ -329,7 +351,7 @@ const showPendingPartners = ref(false)
 const processingPartnerId = ref<string | null>(null)
 
 async function loadPendingPartners() {
-  if (!hasPermission('approve_partners')) return
+  if (!canApprovePartners.value) return
   loadingPartners.value = true
   try {
     const resp = await usersApi.listPending()
