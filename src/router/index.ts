@@ -83,13 +83,13 @@ const routes: RouteRecordRaw[] = [
     path: '/owner/entities',
     name: 'EntitySettings',
     component: () => import('../views/owner/EntitySettings.vue'),
-    meta: { requiresAuth: true, roles: ['owner'] },
+    meta: { requiresAuth: true, roles: ['owner'], permissions: ['add_entities', 'edit_entities'] },
   },
   {
     path: '/owner/users',
     name: 'UserManagement',
     component: () => import('../views/owner/UserManagement.vue'),
-    meta: { requiresAuth: true, roles: ['owner'] },
+    meta: { requiresAuth: true, roles: ['owner'], permissions: ['add_users', 'edit_users', 'manage_permissions', 'view_employee_files'] },
   },
   {
     path: '/owner/contacts',
@@ -101,7 +101,7 @@ const routes: RouteRecordRaw[] = [
     path: '/owner/campaigns',
     name: 'CampaignManager',
     component: () => import('../views/owner/CampaignManager.vue'),
-    meta: { requiresAuth: true, roles: ['owner'] },
+    meta: { requiresAuth: true, roles: ['owner'], permissions: ['send_campaigns'] },
   },
   {
     path: '/owner/permissions',

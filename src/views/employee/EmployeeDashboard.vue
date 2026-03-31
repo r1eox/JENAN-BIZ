@@ -56,12 +56,21 @@
         </router-link>
 
         <!-- Add Users -->
-        <router-link v-if="canAddUsers" to="/supervisor"
+        <router-link v-if="canAddUsers" to="/owner/users"
           class="bg-white rounded-2xl border border-border p-3 text-center hover:border-blue/40 transition-all">
           <svg class="w-6 h-6 mx-auto text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
           </svg>
           <p class="text-xs font-bold text-brand mt-1">إدارة المستخدمين</p>
+        </router-link>
+
+        <!-- Entities Settings -->
+        <router-link v-if="canAddEntities || canEditEntities" to="/owner/entities"
+          class="bg-white rounded-2xl border border-border p-3 text-center hover:border-blue/40 transition-all">
+          <svg class="w-6 h-6 mx-auto text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+          <p class="text-xs font-bold text-brand mt-1">الجهات التمويلية</p>
         </router-link>
 
         <!-- Send Campaigns -->
@@ -260,9 +269,12 @@ const canViewAnalytics   = computed(() => myPerms.value.includes('view_analytics
 const canAddUsers        = computed(() => myPerms.value.includes('add_users'))
 const canSendCampaigns   = computed(() => myPerms.value.includes('send_campaigns'))
 const canAssignCases     = computed(() => myPerms.value.includes('assign_cases'))
+const canAddEntities     = computed(() => myPerms.value.includes('add_entities'))
+const canEditEntities    = computed(() => myPerms.value.includes('edit_entities'))
 const hasElevatedPerms   = computed(() =>
   canApprovePartners.value || canViewAnalytics.value ||
-  canAddUsers.value || canSendCampaigns.value || canAssignCases.value
+  canAddUsers.value || canSendCampaigns.value || canAssignCases.value ||
+  canAddEntities.value || canEditEntities.value
 )
 
 type TabKey = 'assigned' | 'unassigned' | 'need_info' | 'all'
