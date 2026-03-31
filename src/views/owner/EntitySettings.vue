@@ -5,7 +5,14 @@
       <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <img src="/logo.svg" alt="Jenan BIZ" class="h-8" />
-          <span class="text-xs font-bold bg-blue/10 text-blue px-2 py-0.5 rounded-lg">المالك</span>
+          <span class="text-xs font-bold px-2 py-0.5 rounded-lg"
+            :class="{
+              'bg-brand/10 text-brand': currentUser?.role === 'employee',
+              'bg-warning/10 text-warning': currentUser?.role === 'supervisor',
+              'bg-success/10 text-success': currentUser?.role === 'owner',
+            }">
+            {{ currentUser?.role === 'employee' ? 'موظف' : currentUser?.role === 'owner' ? 'المالك' : 'مشرف' }}
+          </span>
         </div>
         <div class="flex items-center gap-3">
           <NotificationBell />
@@ -583,7 +590,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { entityRulesApi } from '../../api/client'
-import { logout } from '../../stores/authStore'
+import { logout, currentUser } from '../../stores/authStore'
 import NotificationBell from '../../components/NotificationBell.vue'
 
 const router = useRouter()

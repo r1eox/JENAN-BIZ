@@ -13,7 +13,7 @@ from app.database import get_db
 from app.models.user import User
 from app.models.entity_rule import EntityRule
 from app.models.audit import AuditLog, AuditAction
-from app.core.rbac import require_role
+from app.core.rbac import require_role, require_permission
 
 router = APIRouter(prefix="/entity-rules", tags=["entity-rules"])
 
@@ -121,7 +121,7 @@ class ReorderRequest(BaseModel):
 
 @router.get("/", response_model=list[EntityRuleResponse])
 async def list_rules(
-    current_user: User = Depends(require_role("owner")),
+    current_user: User = Depends(require_permission("view_partner_files")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -133,7 +133,7 @@ async def list_rules(
 @router.post("/", response_model=EntityRuleResponse, status_code=201)
 async def create_rule(
     body: EntityRuleCreate,
-    current_user: User = Depends(require_role("owner")),
+    current_user: User = Depends(require_permission("add_entities")),
     db: AsyncSession = Depends(get_db),
 ):
     # Check duplicate product code
@@ -165,7 +165,7 @@ async def create_rule(
 async def update_rule(
     rule_id: uuid.UUID,
     body: EntityRuleUpdate,
-    current_user: User = Depends(require_role("owner")),
+    current_user: User = Depends(require_permission("edit_entities")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(EntityRule).where(EntityRule.id == rule_id))
@@ -194,7 +194,7 @@ async def update_rule(
 @router.delete("/{rule_id}")
 async def deactivate_rule(
     rule_id: uuid.UUID,
-    current_user: User = Depends(require_role("owner")),
+    current_user: User = Depends(require_permission("edit_entities")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(EntityRule).where(EntityRule.id == rule_id))
@@ -212,7 +212,7 @@ async def deactivate_rule(
 @router.post("/reorder", response_model=list[EntityRuleResponse])
 async def reorder_rules(
     body: ReorderRequest,
-    current_user: User = Depends(require_role("owner")),
+    current_user: User = Depends(require_permission("edit_entities")),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -291,7 +291,7 @@ async def reorder_rules(
 @router.patch("/{rule_id}/toggle")
 async def toggle_rule(
     rule_id: uuid.UUID,
-    current_user: User = Depends(require_role("owner")),
+    current_user: User = Depends(require_permission("edit_entities")),
     db: AsyncSession = Depends(get_db),
 ):
     """Toggle entity active/inactive status."""
