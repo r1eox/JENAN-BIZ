@@ -93,11 +93,39 @@
 
       <!-- Entity List -->
       <div v-else class="space-y-3">
+        <!-- Bulk action bar -->
+        <div v-if="localRules.length > 0" class="flex items-center gap-3">
+          <button
+            @click="toggleSelectAll"
+            class="flex items-center gap-2 text-sm px-3 py-2 rounded-xl border border-border bg-white hover:border-blue/40 transition-colors cursor-pointer"
+          >
+            <span class="w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors"
+              :class="allSelected ? 'bg-blue border-blue' : 'border-gray-300'">
+              <svg v-if="allSelected" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+              </svg>
+            </span>
+            {{ allSelected ? 'إلغاء التحديد' : 'تحديد الكل' }}
+          </button>
+          <Transition name="fade">
+            <button
+              v-if="selectedEntities.size > 0"
+              @click="deleteSelected"
+              class="flex items-center gap-2 text-sm px-4 py-2 rounded-xl bg-danger text-white hover:bg-red-700 transition-colors cursor-pointer font-semibold"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+              حذف المحدد ({{ selectedEntities.size }})
+            </button>
+          </Transition>
+        </div>
+
         <div
           v-for="(rule, index) in localRules"
           :key="rule.id"
           class="bg-white rounded-2xl border border-border overflow-hidden transition-all"
-          :class="{ 'opacity-50': !rule.is_active, 'ring-2 ring-blue/30': dragIndex === index }"
+          :class="{ 'opacity-50': !rule.is_active, 'ring-2 ring-blue/30': dragIndex === index, 'ring-2 ring-danger/40 bg-danger/5': selectedEntities.has(rule.id) }"
           draggable="true"
           @dragstart="onDragStart(index)"
           @dragover.prevent="onDragOver(index)"
@@ -144,6 +172,12 @@
                       : 'border-success/30 text-success hover:bg-success/5'"
                   >
                     {{ rule.is_active ? 'تعطيل' : 'تفعيل' }}
+                  </button>
+                  <button
+                    @click="deleteEntity(rule.id)"
+                    class="text-sm px-3 py-1.5 rounded-lg border border-danger/30 text-danger hover:bg-danger/5 transition-colors cursor-pointer"
+                  >
+                    حذف
                   </button>
                 </div>
               </div>
@@ -605,6 +639,40 @@ const localRules = ref<any[]>([])
 const originalPriorities = ref<Record<string, number>>({})
 const dragIndex = ref<number | null>(null)
 
+// Bulk select
+const selectedEntities = ref<Set<string>>(new Set())
+const allSelected = computed(() => localRules.value.length > 0 && localRules.value.every(r => selectedEntities.value.has(r.id)))
+function toggleSelectAll() {
+  if (allSelected.value) {
+    selectedEntities.value = new Set()
+  } else {
+    selectedEntities.value = new Set(localRules.value.map(r => r.id))
+  }
+}
+async function deleteEntity(id: string) {
+  if (!confirm('هل أنت متأكد من حذف هذه الجهة؟')) return
+  try {
+    await entityRulesApi.deactivate(id)
+    localRules.value = localRules.value.filter(r => r.id !== id)
+    selectedEntities.value.delete(id)
+    showToast('تم حذف الجهة')
+  } catch {
+    // silent
+  }
+}
+async function deleteSelected() {
+  if (!confirm(`هل أنت متأكد من حذف ${selectedEntities.value.size} جهة؟`)) return
+  try {
+    await Promise.all([...selectedEntities.value].map(id => entityRulesApi.deactivate(id)))
+    const deleted = new Set(selectedEntities.value)
+    localRules.value = localRules.value.filter(r => !deleted.has(r.id))
+    selectedEntities.value = new Set()
+    showToast('تم حذف الجهات المحددة')
+  } catch {
+    // silent
+  }
+}
+
 // Computed
 const hasChanges = computed(() => {
   return localRules.value.some(r => r.priority !== originalPriorities.value[r.id])
@@ -882,4 +950,6 @@ onMounted(loadRules)
   opacity: 0;
   transform: translate(-50%, 10px);
 }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s, transform 0.2s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; transform: scale(0.95); }
 </style>
