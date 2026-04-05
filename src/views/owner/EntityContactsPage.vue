@@ -20,12 +20,31 @@
 
     <main class="p-6 max-w-5xl mx-auto">
       <!-- Filter by entity -->
-      <div class="flex gap-2 mb-6 flex-wrap">
+      <div class="flex gap-2 mb-4 flex-wrap">
         <button @click="filterEntity = ''" :class="filterEntity === '' ? 'bg-blue text-white' : 'bg-white text-text-light border border-border'"
           class="px-3 py-1.5 rounded-xl text-sm font-medium cursor-pointer transition-colors">الكل</button>
         <button v-for="e in entityNames" :key="e" @click="filterEntity = e"
           :class="filterEntity === e ? 'bg-blue text-white' : 'bg-white text-text-light border border-border'"
           class="px-3 py-1.5 rounded-xl text-sm font-medium cursor-pointer transition-colors">{{ e }}</button>
+      </div>
+
+      <!-- Bulk action bar -->
+      <div v-if="canManage && filtered.length > 0" class="flex items-center gap-3 mb-4">
+        <button @click="toggleSelectAll"
+          class="flex items-center gap-2 text-sm text-text-light border border-border bg-white px-3 py-1.5 rounded-xl hover:bg-bg cursor-pointer transition-colors">
+          <div class="w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors"
+            :class="allSelected ? 'bg-blue border-blue' : 'border-border'">
+            <svg v-if="allSelected" class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+          </div>
+          {{ allSelected ? 'إلغاء التحديد' : 'تحديد الكل' }}
+        </button>
+        <Transition name="fade">
+          <button v-if="selected.size > 0" @click="deleteSelected"
+            class="flex items-center gap-2 text-sm font-semibold text-danger border border-danger/30 bg-danger/5 px-3 py-1.5 rounded-xl hover:bg-danger/10 cursor-pointer transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            حذف المحدد ({{ selected.size }})
+          </button>
+        </Transition>
       </div>
 
       <!-- Loading -->
@@ -40,16 +59,25 @@
       <!-- Grid -->
       <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div v-for="c in filtered" :key="c.id"
-          class="bg-white rounded-2xl border border-border p-5 space-y-3 hover:shadow-sm transition-shadow">
+          class="bg-white rounded-2xl border p-5 space-y-3 hover:shadow-sm transition-all cursor-pointer"
+          :class="selected.has(c.id) ? 'border-blue/50 bg-blue/3 ring-1 ring-blue/20' : 'border-border'"
+          @click="canManage && toggleSelect(c.id)">
           <div class="flex justify-between items-start">
-            <div>
-              <p class="font-semibold text-brand">{{ c.name }}</p>
-              <p class="text-xs text-text-light">{{ c.position }}</p>
+            <div class="flex items-center gap-2.5">
+              <!-- Checkbox -->
+              <div v-if="canManage" class="w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors"
+                :class="selected.has(c.id) ? 'bg-blue border-blue' : 'border-border'">
+                <svg v-if="selected.has(c.id)" class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+              </div>
+              <div>
+                <p class="font-semibold text-brand">{{ c.name }}</p>
+                <p class="text-xs text-text-light">{{ c.position }}</p>
+              </div>
             </div>
-            <span class="text-xs bg-blue/10 text-blue px-2 py-1 rounded-lg">{{ c.entity_name }}</span>
+            <span class="text-xs bg-blue/10 text-blue px-2 py-1 rounded-lg flex-shrink-0">{{ c.entity_name }}</span>
           </div>
           <div class="grid grid-cols-2 gap-2 text-sm">
-            <a v-if="c.phone" :href="`tel:${c.phone}`" class="flex items-center gap-1 text-text-light hover:text-blue transition-colors">
+            <a v-if="c.phone" :href="`tel:${c.phone}`" @click.stop class="flex items-center gap-1 text-text-light hover:text-blue transition-colors">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
               {{ c.phone }}
             </a>
@@ -59,7 +87,7 @@
             </span>
           </div>
           <p v-if="c.notes" class="text-xs text-text-light bg-bg rounded-lg px-3 py-2">{{ c.notes }}</p>
-          <div v-if="canManage" class="flex gap-2 pt-1">
+          <div v-if="canManage" class="flex gap-2 pt-1" @click.stop>
             <button @click="openEdit(c)" class="text-xs text-blue border border-blue/30 px-3 py-1.5 rounded-lg hover:bg-blue/5 cursor-pointer transition-colors">تعديل</button>
             <button @click="deleteContact(c)" class="text-xs text-danger border border-danger/30 px-3 py-1.5 rounded-lg hover:bg-danger/5 cursor-pointer transition-colors">حذف</button>
           </div>
@@ -133,12 +161,39 @@ const showModal = ref(false)
 const editing = ref<any>(null)
 const formError = ref('')
 const saving = ref(false)
+const selected = ref<Set<string>>(new Set())
 
 const emptyForm = () => ({ entity_name: '', name: '', position: '', phone: '', email: '', notes: '' })
 const form = ref(emptyForm())
 
 const entityNames = computed(() => [...new Set(items.value.map(c => c.entity_name))].filter(Boolean).sort())
 const filtered = computed(() => filterEntity.value ? items.value.filter(c => c.entity_name === filterEntity.value) : items.value)
+const allSelected = computed(() => filtered.value.length > 0 && filtered.value.every(c => selected.value.has(c.id)))
+
+function toggleSelect(id: string) {
+  const s = new Set(selected.value)
+  s.has(id) ? s.delete(id) : s.add(id)
+  selected.value = s
+}
+
+function toggleSelectAll() {
+  if (allSelected.value) {
+    selected.value = new Set()
+  } else {
+    selected.value = new Set(filtered.value.map(c => c.id))
+  }
+}
+
+async function deleteSelected() {
+  if (selected.value.size === 0) return
+  if (!confirm(`حذف ${selected.value.size} جهة اتصال؟`)) return
+  try {
+    await Promise.all([...selected.value].map(id => entityContactsApi.remove(id)))
+    selected.value = new Set()
+    showToast('تم حذف العناصر المحددة')
+    await load()
+  } catch { /**/ }
+}
 
 async function load() {
   loading.value = true
@@ -178,4 +233,6 @@ onMounted(load)
 <style scoped>
 .toast-enter-active, .toast-leave-active { transition: all 0.3s ease; }
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translate(-50%, 10px); }
+.fade-enter-active, .fade-leave-active { transition: all 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateX(6px); }
 </style>
