@@ -510,19 +510,53 @@
           <!-- Facility types -->
           <div>
             <label class="block text-xs font-medium text-text-light mb-2">أنواع التسهيلات <span class="text-danger">*</span></label>
-            <div class="flex gap-4">
-              <label class="flex items-center gap-2 cursor-pointer text-sm">
-                <input type="checkbox" :checked="editForm.facility_types?.includes('pos')" @change="toggleEditFacility('pos')" class="w-4 h-4" />
-                نقاط بيع (POS)
-              </label>
-              <label class="flex items-center gap-2 cursor-pointer text-sm">
-                <input type="checkbox" :checked="editForm.facility_types?.includes('cash')" @change="toggleEditFacility('cash')" class="w-4 h-4" />
-                كاش
-              </label>
-              <label class="flex items-center gap-2 cursor-pointer text-sm">
-                <input type="checkbox" :checked="editForm.facility_types?.includes('fleet')" @change="toggleEditFacility('fleet')" class="w-4 h-4" />
-                أسطول
-              </label>
+            <!-- Current types as removable chips -->
+            <div class="flex flex-wrap gap-2 mb-3 min-h-[2rem]">
+              <span
+                v-for="ft in editForm.facility_types"
+                :key="ft"
+                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-medium bg-blue/10 text-blue border border-blue/20"
+              >
+                {{ ft === 'pos' ? 'نقاط بيع (POS)' : ft === 'cash' ? 'كاش' : ft === 'fleet' ? 'أسطول' : ft }}
+                <button
+                  @click="removeEditFacility(ft)"
+                  :disabled="editForm.facility_types.length <= 1"
+                  class="text-blue/50 hover:text-danger disabled:opacity-30 cursor-pointer transition-colors"
+                  title="حذف"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </button>
+              </span>
+            </div>
+            <!-- Quick-add standard types -->
+            <div class="flex flex-wrap gap-2 mb-2">
+              <button
+                v-for="ft in [{key:'pos',label:'نقاط بيع (POS)'},{key:'cash',label:'كاش'},{key:'fleet',label:'أسطول'}]"
+                :key="ft.key"
+                @click="addEditFacility(ft.key)"
+                :disabled="editForm.facility_types?.includes(ft.key)"
+                class="text-xs px-3 py-1.5 rounded-lg border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-default"
+                :class="editForm.facility_types?.includes(ft.key) ? 'bg-blue/10 border-blue/20 text-blue' : 'border-border text-text-light hover:border-blue/30 hover:text-blue bg-white'"
+              >
+                <span v-if="!editForm.facility_types?.includes(ft.key)">+ </span>{{ ft.label }}
+              </button>
+            </div>
+            <!-- Custom type input -->
+            <div class="flex gap-2">
+              <input
+                v-model="editCustomFacilityInput"
+                class="flex-1 px-3 py-1.5 text-sm border border-border rounded-xl focus:outline-none focus:border-blue"
+                placeholder="أضف نوع تسهيل مخصص..."
+                @keydown.enter.prevent="addCustomEditFacility"
+              />
+              <button
+                @click="addCustomEditFacility"
+                class="px-3 py-1.5 text-sm bg-blue/10 text-blue border border-blue/20 rounded-xl hover:bg-blue/20 cursor-pointer transition-colors"
+              >
+                إضافة
+              </button>
             </div>
           </div>
 
@@ -554,34 +588,67 @@
           </div>
 
           <!-- Key thresholds -->
-          <details class="border border-border rounded-xl">
-            <summary class="px-4 py-3 text-sm font-semibold text-brand cursor-pointer">معايير القبول (اختياري)</summary>
-            <div class="px-4 pb-4 pt-2 grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-xs font-medium text-text-light mb-1">عمر السجل الأدنى (شهر)</label>
-                <input type="number" v-model.number="editForm.min_age_months" class="w-full px-3 py-1.5 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" />
+          <details open class="border border-border rounded-xl">
+            <summary class="px-4 py-3 text-sm font-semibold text-brand cursor-pointer flex items-center justify-between">
+              <span>معايير القبول</span>
+              <span class="text-xs font-normal text-blue">{{ Object.values(editForm._enabled || {}).filter(Boolean).length }} معيار مفعّل</span>
+            </summary>
+            <div class="px-4 pb-4 pt-2 space-y-2">
+
+              <!-- Always-on: عمر السجل -->
+              <div class="flex items-center gap-3 bg-bg rounded-xl px-3 py-2.5">
+                <span class="text-sm text-brand flex-1 font-medium">عمر السجل الأدنى (شهر)</span>
+                <input type="number" v-model.number="editForm.min_age_months" class="w-24 text-center text-sm border border-border rounded-lg px-2 py-1.5 focus:border-blue outline-none" />
               </div>
-              <div>
-                <label class="block text-xs font-medium text-text-light mb-1">أقصى عدد شركاء</label>
-                <input type="number" v-model.number="editForm.max_partners" class="w-full px-3 py-1.5 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" placeholder="بلا حد" />
+
+              <!-- Toggleable numeric criteria -->
+              <div
+                v-for="c in [
+                  { key: 'max_partners',      label: 'أقصى عدد شركاء',           suffix: '' },
+                  { key: 'min_pos_rajhi',     label: 'حد POS راجحي',              suffix: 'ر.س' },
+                  { key: 'min_pos_other',     label: 'حد POS أخرى',               suffix: 'ر.س' },
+                  { key: 'min_total_deposits',label: 'إجمالي الإيداعات',           suffix: 'ر.س' },
+                  { key: 'min_total_revenue', label: 'إجمالي الإيرادات',           suffix: 'ر.س' },
+                  { key: 'min_profit_ratio',  label: 'نسبة صافي الربح',           suffix: '%' },
+                ]"
+                :key="c.key"
+                class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors"
+                :class="editForm._enabled && editForm._enabled[c.key] ? 'bg-blue/5 border border-blue/15' : 'bg-bg'"
+              >
+                <!-- enable/disable toggle -->
+                <input
+                  type="checkbox"
+                  :checked="editForm._enabled && editForm._enabled[c.key]"
+                  @change="toggleCriterion(c.key, ($event.target as HTMLInputElement).checked)"
+                  class="w-4 h-4 flex-shrink-0 cursor-pointer"
+                />
+                <!-- label -->
+                <span
+                  class="text-sm flex-1 select-none"
+                  :class="editForm._enabled && editForm._enabled[c.key] ? 'text-brand font-medium' : 'text-text-light'"
+                >{{ c.label }}</span>
+                <!-- input (when enabled) -->
+                <template v-if="editForm._enabled && editForm._enabled[c.key]">
+                  <div class="flex items-center gap-1">
+                    <input
+                      type="number"
+                      v-model.number="editForm[c.key]"
+                      class="w-28 text-center text-sm border border-blue/30 rounded-lg px-2 py-1.5 focus:border-blue outline-none bg-white"
+                    />
+                    <span v-if="c.suffix" class="text-xs text-text-light">{{ c.suffix }}</span>
+                  </div>
+                  <!-- clear button -->
+                  <button @click="clearCriterion(c.key)" class="text-danger/50 hover:text-danger cursor-pointer flex-shrink-0 transition-colors" title="حذف المعيار">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                  </button>
+                </template>
+                <span v-else class="text-xs text-text-light/40 italic">— بلا حد</span>
               </div>
-              <div>
-                <label class="block text-xs font-medium text-text-light mb-1">حد إيداعات راجحي (ر.س)</label>
-                <input type="number" v-model.number="editForm.min_pos_rajhi" class="w-full px-3 py-1.5 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" />
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-text-light mb-1">حد إيداعات أخرى (ر.س)</label>
-                <input type="number" v-model.number="editForm.min_pos_other" class="w-full px-3 py-1.5 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" />
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-text-light mb-1">حد إجمالي الإيداعات (ر.س)</label>
-                <input type="number" v-model.number="editForm.min_total_deposits" class="w-full px-3 py-1.5 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" />
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-text-light mb-1">حد إجمالي الإيرادات (ر.س)</label>
-                <input type="number" v-model.number="editForm.min_total_revenue" class="w-full px-3 py-1.5 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" />
-              </div>
-              <div class="col-span-2 flex gap-4">
+
+              <!-- Boolean criteria -->
+              <div class="flex flex-wrap gap-x-5 gap-y-2 border-t border-border pt-3 mt-1">
                 <label class="flex items-center gap-2 cursor-pointer text-sm">
                   <input type="checkbox" v-model="editForm.requires_pos" class="w-4 h-4" />
                   يتطلب POS
@@ -593,6 +660,10 @@
                 <label class="flex items-center gap-2 cursor-pointer text-sm">
                   <input type="checkbox" v-model="editForm.accepts_foreign" class="w-4 h-4" />
                   يقبل أجانب
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm">
+                  <input type="checkbox" v-model="editForm.requires_stability_check" class="w-4 h-4" />
+                  فحص الاستقرار
                 </label>
               </div>
             </div>
@@ -816,6 +887,43 @@ function toggleEditFacility(ft: string) {
   else if (arr.length > 1) arr.splice(idx, 1)
 }
 
+const editCustomFacilityInput = ref('')
+
+function addEditFacility(key: string) {
+  if (!editForm.value.facility_types.includes(key)) {
+    editForm.value.facility_types.push(key)
+  }
+}
+
+function removeEditFacility(ft: string) {
+  const arr: string[] = editForm.value.facility_types
+  if (arr.length <= 1) return
+  const idx = arr.indexOf(ft)
+  if (idx !== -1) arr.splice(idx, 1)
+}
+
+function addCustomEditFacility() {
+  const val = editCustomFacilityInput.value.trim()
+  if (!val) return
+  const key = val.toLowerCase().replace(/\s+/g, '_')
+  if (!editForm.value.facility_types.includes(key)) {
+    editForm.value.facility_types.push(key)
+  }
+  editCustomFacilityInput.value = ''
+}
+
+function toggleCriterion(key: string, enabled: boolean) {
+  if (!editForm.value._enabled) editForm.value._enabled = {}
+  editForm.value._enabled[key] = enabled
+  if (!enabled) editForm.value[key] = ''
+}
+
+function clearCriterion(key: string) {
+  if (!editForm.value._enabled) editForm.value._enabled = {}
+  editForm.value._enabled[key] = false
+  editForm.value[key] = ''
+}
+
 async function saveCreate() {
   createError.value = ''
   if (!createForm.value.entity_name.trim()) { createError.value = 'اسم الجهة مطلوب'; return }
@@ -868,15 +976,25 @@ function openEdit(rule: any) {
     facility_types: [...(rule.facility_types || ['pos'])],
     description: rule.description || '',
     required_docs: [...(rule.required_docs || [])],
-    min_age_months: rule.min_age_months,
+    min_age_months: rule.min_age_months ?? 6,
     max_partners: rule.max_partners ?? '',
     min_pos_rajhi: rule.min_pos_rajhi ?? '',
     min_pos_other: rule.min_pos_other ?? '',
     min_total_deposits: rule.min_total_deposits ?? '',
     min_total_revenue: rule.min_total_revenue ?? '',
-    requires_pos: rule.requires_pos,
-    requires_invoices: rule.requires_invoices,
-    accepts_foreign: rule.accepts_foreign,
+    min_profit_ratio: rule.min_profit_ratio != null ? Number((rule.min_profit_ratio * 100).toFixed(1)) : '',
+    requires_pos: !!rule.requires_pos,
+    requires_invoices: !!rule.requires_invoices,
+    accepts_foreign: rule.accepts_foreign ?? true,
+    requires_stability_check: !!rule.requires_stability_check,
+    _enabled: {
+      max_partners:       rule.max_partners != null,
+      min_pos_rajhi:      rule.min_pos_rajhi != null,
+      min_pos_other:      rule.min_pos_other != null,
+      min_total_deposits: rule.min_total_deposits != null,
+      min_total_revenue:  rule.min_total_revenue != null,
+      min_profit_ratio:   rule.min_profit_ratio != null,
+    },
   }
 }
 
@@ -893,21 +1011,25 @@ async function saveEdit() {
   editError.value = ''
   editSaving.value = true
   try {
+    const en = editForm.value._enabled || {}
+    const numOrNull = (key: string) => en[key] && editForm.value[key] !== '' ? Number(editForm.value[key]) : null
     const payload: any = {
       entity_name: editForm.value.entity_name,
       product_name: editForm.value.product_name,
       facility_types: editForm.value.facility_types,
       description: editForm.value.description,
       required_docs: editForm.value.required_docs.filter((d: string) => d.trim()),
-      min_age_months: editForm.value.min_age_months,
-      max_partners: editForm.value.max_partners === '' ? null : Number(editForm.value.max_partners),
-      min_pos_rajhi: editForm.value.min_pos_rajhi === '' ? null : Number(editForm.value.min_pos_rajhi),
-      min_pos_other: editForm.value.min_pos_other === '' ? null : Number(editForm.value.min_pos_other),
-      min_total_deposits: editForm.value.min_total_deposits === '' ? null : Number(editForm.value.min_total_deposits),
-      min_total_revenue: editForm.value.min_total_revenue === '' ? null : Number(editForm.value.min_total_revenue),
+      min_age_months: Number(editForm.value.min_age_months) || 6,
+      max_partners:       numOrNull('max_partners'),
+      min_pos_rajhi:      numOrNull('min_pos_rajhi'),
+      min_pos_other:      numOrNull('min_pos_other'),
+      min_total_deposits: numOrNull('min_total_deposits'),
+      min_total_revenue:  numOrNull('min_total_revenue'),
+      min_profit_ratio:   en.min_profit_ratio && editForm.value.min_profit_ratio !== '' ? Number(editForm.value.min_profit_ratio) / 100 : null,
       requires_pos: editForm.value.requires_pos,
       requires_invoices: editForm.value.requires_invoices,
       accepts_foreign: editForm.value.accepts_foreign,
+      requires_stability_check: editForm.value.requires_stability_check,
     }
     const updated = await entityRulesApi.update(editRule.value.id, payload)
     // Update in-place
