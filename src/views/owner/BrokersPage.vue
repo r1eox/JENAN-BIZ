@@ -76,7 +76,7 @@
             </div>
             <div class="grid grid-cols-2 gap-2">
               <div>
-                <label class="block text-xs font-medium text-text-light mb-1">الجوال <span class="text-text-light/60 font-normal">(اختياري)</span></label>
+                <label class="block text-xs font-medium text-text-light mb-1">الجوال <span class="text-danger">*</span></label>
                 <input v-model="form.phone" class="w-full px-3 py-2 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" />
               </div>
               <div>
@@ -162,7 +162,7 @@ function openCreate() { editing.value = null; form.value = emptyForm(); formErro
 function openEdit(b: any) { editing.value = b; form.value = { name: b.name, phone: b.phone, email: b.email, company_name: b.company_name, cr_number: b.cr_number, city: b.city, notes: b.notes }; formError.value = ''; showModal.value = true }
 
 async function save() {
-  if (!form.value.name) { formError.value = 'الاسم مطلوب'; return }
+  if (!form.value.name || !form.value.phone) { formError.value = 'الاسم ورقم الجوال مطلوبان'; return }
   saving.value = true; formError.value = ''
   try {
     if (editing.value) {
