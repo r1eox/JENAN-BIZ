@@ -18,9 +18,8 @@ router = APIRouter(prefix="/entity-contacts", tags=["entity-contacts"])
 
 
 class EntityContactCreate(BaseModel):
-    entity_code: str = Field(..., min_length=1)
-    entity_name: str = ""
-    name: str = Field(..., min_length=2)
+    entity_name: str = Field(..., min_length=1)
+    name: str = Field(..., min_length=1)
     position: str = ""
     phone: str = ""
     email: str = ""
@@ -28,7 +27,6 @@ class EntityContactCreate(BaseModel):
 
 
 class EntityContactUpdate(BaseModel):
-    entity_code: str | None = None
     entity_name: str | None = None
     name: str | None = None
     position: str | None = None
@@ -40,7 +38,6 @@ class EntityContactUpdate(BaseModel):
 
 class EntityContactOut(BaseModel):
     id: uuid.UUID
-    entity_code: str
     entity_name: str
     name: str
     position: str
@@ -61,14 +58,14 @@ class EntityContactListResponse(BaseModel):
 
 @router.get("/", response_model=EntityContactListResponse)
 async def list_entity_contacts(
-    entity_code: str | None = None,
+    entity_name: str | None = None,
     pagination: PaginationParams = Depends(),
     current_user=Depends(require_permission("view_entity_contacts")),
     db: AsyncSession = Depends(get_db),
 ):
     query = select(EntityContact).where(EntityContact.is_active == True)
-    if entity_code:
-        query = query.where(EntityContact.entity_code == entity_code)
+    if entity_name:
+        query = query.where(EntityContact.entity_name == entity_name)
 
     total = (await db.execute(select(func.count()).select_from(query.subquery()))).scalar() or 0
     query = query.order_by(EntityContact.created_at.desc()).offset(pagination.offset).limit(pagination.size)
@@ -83,7 +80,10 @@ async def create_entity_contact(
     current_user=Depends(require_permission("manage_entity_contacts")),
     db: AsyncSession = Depends(get_db),
 ):
-    contact = EntityContact(**body.model_dump())
+    # auto-generate entity_code from entity_name (slug-like)
+    code = body.entity_name.strip().replace(" ", "_").lower()[:30] or "unknown"
+    data = body.model_dump()
+    contact = EntityContact(entity_code=code, **data)
     db.add(contact)
     await db.commit()
     await db.refresh(contact)
