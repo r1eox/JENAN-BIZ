@@ -82,21 +82,21 @@
               <input v-model="form.name" class="w-full px-3 py-2 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" placeholder="اسم الموظف" />
             </div>
             <div>
-              <label class="block text-xs font-medium text-text-light mb-1">المسمى الوظيفي</label>
+              <label class="block text-xs font-medium text-text-light mb-1">المسمى الوظيفي <span class="text-text-light/60 font-normal">(اختياري)</span></label>
               <input v-model="form.position" class="w-full px-3 py-2 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" placeholder="مثال: مدير العلاقات" />
             </div>
             <div class="grid grid-cols-2 gap-2">
               <div>
-                <label class="block text-xs font-medium text-text-light mb-1">الجوال</label>
+                <label class="block text-xs font-medium text-text-light mb-1">الجوال <span class="text-text-light/60 font-normal">(اختياري)</span></label>
                 <input v-model="form.phone" class="w-full px-3 py-2 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" placeholder="05xxxxxxxx" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-text-light mb-1">البريد الإلكتروني</label>
+                <label class="block text-xs font-medium text-text-light mb-1">البريد الإلكتروني <span class="text-text-light/60 font-normal">(اختياري)</span></label>
                 <input v-model="form.email" class="w-full px-3 py-2 text-sm border border-border rounded-xl focus:outline-none focus:border-blue" />
               </div>
             </div>
             <div>
-              <label class="block text-xs font-medium text-text-light mb-1">ملاحظات</label>
+              <label class="block text-xs font-medium text-text-light mb-1">ملاحظات <span class="text-text-light/60 font-normal">(اختياري)</span></label>
               <textarea v-model="form.notes" rows="2" class="w-full px-3 py-2 text-sm border border-border rounded-xl focus:outline-none focus:border-blue resize-none"></textarea>
             </div>
           </div>
