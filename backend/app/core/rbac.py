@@ -100,10 +100,20 @@ ALL_PERMISSIONS: dict[str, str] = {
     # ── الجهات التمويلية ──
     "add_entities":        "إضافة جهات تمويلية جديدة",
     "edit_entities":       "تعديل بيانات الجهات التمويلية",
+    # ── موظفو الجهات التمويلية ──
+    "view_entity_contacts":   "الاطلاع على موظفي الجهات التمويلية",
+    "manage_entity_contacts": "إدارة موظفي الجهات التمويلية",
+    # ── سجل الوسطاء ──
+    "view_brokers":        "الاطلاع على سجل الوسطاء",
+    "manage_brokers":      "إدارة سجل الوسطاء",
+    # ── سجل المنشآت ──
+    "view_business_registry":   "الاطلاع على سجل المنشآت",
+    "manage_business_registry": "إدارة سجل المنشآت",
     # ── التسويق ──
     "send_campaigns":      "إنشاء وإرسال الحملات التسويقية عبر واتساب",
     # ── التقارير ──
     "view_analytics":      "عرض الإحصائيات والتقارير",
+    "view_employee_stats": "عرض إحصائيات أداء الموظفين",
 }
 
 # Default permissions per role

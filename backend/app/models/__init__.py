@@ -15,3 +15,6 @@ from app.models.contact import Contact  # noqa: F401
 from app.models.campaign import (  # noqa: F401
     Campaign, CampaignStatus, ContentType, TargetAudience,
 )
+from app.models.entity_contact import EntityContact  # noqa: F401
+from app.models.broker import Broker  # noqa: F401
+from app.models.business import Business  # noqa: F401

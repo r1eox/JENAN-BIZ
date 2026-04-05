@@ -298,8 +298,9 @@ const roleDefaults = ref<Record<string, string[]>>({})
 const permGroups = [
   { label: 'المستخدمون', keys: ['add_users', 'edit_users', 'promote_roles', 'approve_partners', 'manage_permissions'] },
   { label: 'الملفات والطلبات', keys: ['view_partner_files', 'view_employee_files', 'view_all_cases', 'update_case_stages', 'assign_cases'] },
-  { label: 'الجهات التمويلية', keys: ['add_entities', 'edit_entities'] },
-  { label: 'التسويق والتقارير', keys: ['send_campaigns', 'view_analytics'] },
+  { label: 'الجهات التمويلية', keys: ['add_entities', 'edit_entities', 'view_entity_contacts', 'manage_entity_contacts'] },
+  { label: 'السجلات', keys: ['view_brokers', 'manage_brokers', 'view_business_registry', 'manage_business_registry'] },
+  { label: 'التسويق والتقارير', keys: ['send_campaigns', 'view_analytics', 'view_employee_stats'] },
 ]
 
 async function fetchDefinitions() {

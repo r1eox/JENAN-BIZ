@@ -30,6 +30,10 @@ from app.api.entity_rules import router as entity_rules_router
 from app.api.notifications import router as notifications_router
 from app.api.contacts import router as contacts_router
 from app.api.campaigns import router as campaigns_router
+from app.api.entity_contacts import router as entity_contacts_router
+from app.api.brokers import router as brokers_router
+from app.api.businesses import router as businesses_router
+from app.api.employee_stats import router as employee_stats_router
 
 settings = get_settings()
 
@@ -495,6 +499,10 @@ app.include_router(entity_rules_router, prefix="/api")
 app.include_router(notifications_router, prefix="/api")
 app.include_router(contacts_router, prefix="/api")
 app.include_router(campaigns_router, prefix="/api")
+app.include_router(entity_contacts_router, prefix="/api")
+app.include_router(brokers_router, prefix="/api")
+app.include_router(businesses_router, prefix="/api")
+app.include_router(employee_stats_router, prefix="/api")
 
 
 # ─── Health check ──────────────────────────────────────

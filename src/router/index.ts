@@ -98,6 +98,30 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, roles: ['owner'] },
   },
   {
+    path: '/owner/entity-contacts',
+    name: 'EntityContactsPage',
+    component: () => import('../views/owner/EntityContactsPage.vue'),
+    meta: { requiresAuth: true, roles: ['owner'], permissions: ['view_entity_contacts', 'manage_entity_contacts'] },
+  },
+  {
+    path: '/owner/brokers',
+    name: 'BrokersPage',
+    component: () => import('../views/owner/BrokersPage.vue'),
+    meta: { requiresAuth: true, roles: ['owner'], permissions: ['view_brokers', 'manage_brokers'] },
+  },
+  {
+    path: '/owner/businesses',
+    name: 'BusinessRegistryPage',
+    component: () => import('../views/owner/BusinessRegistryPage.vue'),
+    meta: { requiresAuth: true, roles: ['owner'], permissions: ['view_business_registry', 'manage_business_registry'] },
+  },
+  {
+    path: '/owner/employee-stats',
+    name: 'EmployeeStatsPage',
+    component: () => import('../views/owner/EmployeeStatsPage.vue'),
+    meta: { requiresAuth: true, roles: ['owner', 'supervisor'], permissions: ['view_employee_stats'] },
+  },
+  {
     path: '/owner/campaigns',
     name: 'CampaignManager',
     component: () => import('../views/owner/CampaignManager.vue'),

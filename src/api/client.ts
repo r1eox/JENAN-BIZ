@@ -772,3 +772,74 @@ export const campaignsApi = {
 }
 
 export { ApiException }
+
+// ─── Entity Contacts API ──────────────────────────────
+
+export const entityContactsApi = {
+  async list(params?: { page?: number; size?: number }): Promise<any> {
+    const sp = new URLSearchParams()
+    if (params?.page) sp.set('page', String(params.page))
+    if (params?.size) sp.set('size', String(params.size))
+    const qs = sp.toString()
+    return request('GET', `/entity-contacts/${qs ? '?' + qs : ''}`)
+  },
+  async create(data: { entity_name: string; name: string; position?: string; phone?: string; email?: string; notes?: string }): Promise<any> {
+    return request('POST', '/entity-contacts/', data)
+  },
+  async update(id: string, data: any): Promise<any> {
+    return request('PATCH', `/entity-contacts/${id}`, data)
+  },
+  async remove(id: string): Promise<void> {
+    return request('DELETE', `/entity-contacts/${id}`)
+  },
+}
+
+// ─── Brokers API ──────────────────────────────────────
+
+export const brokersApi = {
+  async list(params?: { page?: number; size?: number }): Promise<any> {
+    const sp = new URLSearchParams()
+    if (params?.page) sp.set('page', String(params.page))
+    if (params?.size) sp.set('size', String(params.size))
+    const qs = sp.toString()
+    return request('GET', `/brokers/${qs ? '?' + qs : ''}`)
+  },
+  async create(data: { name: string; phone?: string; email?: string; company_name?: string; cr_number?: string; city?: string; notes?: string }): Promise<any> {
+    return request('POST', '/brokers/', data)
+  },
+  async update(id: string, data: any): Promise<any> {
+    return request('PATCH', `/brokers/${id}`, data)
+  },
+  async remove(id: string): Promise<void> {
+    return request('DELETE', `/brokers/${id}`)
+  },
+}
+
+// ─── Businesses API ───────────────────────────────────
+
+export const businessesApi = {
+  async list(params?: { page?: number; size?: number }): Promise<any> {
+    const sp = new URLSearchParams()
+    if (params?.page) sp.set('page', String(params.page))
+    if (params?.size) sp.set('size', String(params.size))
+    const qs = sp.toString()
+    return request('GET', `/businesses/${qs ? '?' + qs : ''}`)
+  },
+  async create(data: { company_name: string; cr_number?: string; activity?: string; owner_name?: string; phone?: string; city?: string; establishment_year?: string; notes?: string }): Promise<any> {
+    return request('POST', '/businesses/', data)
+  },
+  async update(id: string, data: any): Promise<any> {
+    return request('PATCH', `/businesses/${id}`, data)
+  },
+  async remove(id: string): Promise<void> {
+    return request('DELETE', `/businesses/${id}`)
+  },
+}
+
+// ─── Employee Stats API ───────────────────────────────
+
+export const employeeStatsApi = {
+  async get(): Promise<any> {
+    return request('GET', '/employee-stats/')
+  },
+}
