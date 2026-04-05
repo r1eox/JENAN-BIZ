@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-bg" dir="rtl">
     <!-- Header -->
     <header class="bg-white border-b border-border px-6 py-4 flex items-center gap-3 sticky top-0 z-10">
-      <router-link to="/owner/users" class="text-text-light hover:text-brand transition-colors">
+      <router-link to="/owner" class="text-text-light hover:text-brand transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
       </router-link>
       <div>

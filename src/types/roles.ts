@@ -26,6 +26,10 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
     'add_users', 'edit_users', 'promote_roles', 'approve_partners', 'manage_permissions',
     'view_partner_files', 'view_employee_files', 'update_case_stages', 'assign_cases',
     'view_all_cases', 'add_entities', 'edit_entities', 'send_campaigns', 'view_analytics',
+    'view_entity_contacts', 'manage_entity_contacts',
+    'view_brokers', 'manage_brokers',
+    'view_business_registry', 'manage_business_registry',
+    'view_employee_stats',
   ],
 }
 
