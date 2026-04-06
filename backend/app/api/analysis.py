@@ -21,7 +21,7 @@ from app.database import get_db
 from app.models.user import User, UserRole
 from app.models.case import Case, CaseStage, CaseStageHistory
 from app.models.audit import AuditLog, AuditAction, Notification, NotificationType
-from app.core.rbac import get_current_user
+from app.core.rbac import get_current_user, can_create_cases
 from app.core.dependencies import validate_excel_file, validate_cr_file
 from app.schemas.case import CaseResponse, AnalysisResultSchema
 from app.engine.rule_engine import pre_filter_entities, calculate_required_bs_months
@@ -123,8 +123,8 @@ async def create_manual_case(
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new case without uploading a CR file (manual data entry)."""
-    if current_user.role != UserRole.partner:
-        raise HTTPException(403, "فقط الشركاء يمكنهم إنشاء الطلبات")
+    if not can_create_cases(current_user):
+        raise HTTPException(403, "فقط الشركاء والموظفون المخولين يمكنهم إنشاء الطلبات")
     if facility_type not in ("pos", "cash", "fleet"):
         raise HTTPException(422, "نوع التسهيلات غير صالح")
 
@@ -178,8 +178,8 @@ async def upload_cr(
     db: AsyncSession = Depends(get_db),
 ):
     """Upload Commercial Registration document and create a new case."""
-    if current_user.role != UserRole.partner:
-        raise HTTPException(403, "فقط الشركاء يمكنهم رفع السجل التجاري")
+    if not can_create_cases(current_user):
+        raise HTTPException(403, "فقط الشركاء والموظفون المخولين يمكنهم رفع السجل التجاري")
 
     if facility_type not in ("pos", "cash", "fleet"):
         raise HTTPException(422, "نوع التسهيلات غير صالح. الخيارات: pos, cash, fleet")

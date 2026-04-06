@@ -109,6 +109,15 @@
           <p class="text-xs font-bold text-brand mt-1">إحصائيات الموظفين</p>
         </router-link>
 
+        <!-- رفع طلب جديد (when employee has create_cases permission) -->
+        <router-link v-if="canCreateCases" to="/partner/request/new"
+          class="bg-white rounded-2xl border border-border p-3 text-center hover:border-brand/40 transition-all">
+          <svg class="w-6 h-6 mx-auto text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          <p class="text-xs font-bold text-brand mt-1">رفع طلب جديد</p>
+        </router-link>
+
         <!-- Send Campaigns -->
         <router-link v-if="canSendCampaigns" to="/owner/campaigns"
           class="bg-white rounded-2xl border border-border p-3 text-center hover:border-blue/40 transition-all">
@@ -305,6 +314,7 @@ const canViewAnalytics   = computed(() => myPerms.value.includes('view_analytics
 const canAddUsers        = computed(() => myPerms.value.includes('add_users'))
 const canSendCampaigns   = computed(() => myPerms.value.includes('send_campaigns'))
 const canAssignCases     = computed(() => myPerms.value.includes('assign_cases'))
+const canCreateCases     = computed(() => myPerms.value.includes('create_cases'))
 const canAddEntities          = computed(() => myPerms.value.includes('add_entities'))
 const canEditEntities         = computed(() => myPerms.value.includes('edit_entities'))
 const canViewEntityContacts   = computed(() => myPerms.value.includes('view_entity_contacts') || myPerms.value.includes('manage_entity_contacts'))
@@ -316,7 +326,8 @@ const hasElevatedPerms   = computed(() =>
   canAddUsers.value || canSendCampaigns.value || canAssignCases.value ||
   canAddEntities.value || canEditEntities.value ||
   canViewEntityContacts.value || canViewBrokers.value ||
-  canViewBusinessRegistry.value || canViewEmployeeStats.value
+  canViewBusinessRegistry.value || canViewEmployeeStats.value ||
+  canCreateCases.value
 )
 
 type TabKey = 'assigned' | 'unassigned' | 'need_info' | 'all'

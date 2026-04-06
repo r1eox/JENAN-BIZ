@@ -30,6 +30,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, string[]> = {
     'view_brokers', 'manage_brokers',
     'view_business_registry', 'manage_business_registry',
     'view_employee_stats',
+    'delete_cases', 'create_cases',
   ],
 }
 

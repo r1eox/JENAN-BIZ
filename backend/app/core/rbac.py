@@ -114,6 +114,9 @@ ALL_PERMISSIONS: dict[str, str] = {
     # ── التقارير ──
     "view_analytics":      "عرض الإحصائيات والتقارير",
     "view_employee_stats": "عرض إحصائيات أداء الموظفين",
+    # ── الطلبات (متقدم) ──
+    "delete_cases":        "حذف الطلبات نهائياً",
+    "create_cases":        "رفع طلبات تحليل جديدة (للموظفين)",
 }
 
 # Default permissions per role
@@ -199,6 +202,12 @@ def can_see_audit_log(user: User) -> bool:
 def can_manage_entity_rules(user: User) -> bool:
     return user.role == UserRole.owner
 
+def can_delete_cases(user: "User") -> bool:
+    return user.role == UserRole.owner or has_permission(user, 'delete_cases')
+
+
+def can_create_cases(user: "User") -> bool:
+    return user.role in (UserRole.partner, UserRole.owner) or has_permission(user, 'create_cases')
 
 def can_manage_users(user: User) -> bool:
     return user.role == UserRole.owner

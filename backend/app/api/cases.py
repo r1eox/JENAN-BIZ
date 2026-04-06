@@ -33,6 +33,7 @@ from app.core.rbac import (
     get_current_user, require_role, require_permission,
     can_see_entity_names, can_advance_stage,
     can_approve_transitions, can_reject_case, can_assign_cases,
+    can_delete_cases,
 )
 from app.core.dependencies import PaginationParams
 
@@ -460,6 +461,35 @@ async def cancel_case(
     await db.commit()
     await db.refresh(case)
     return _case_to_response(case, current_user)
+
+
+# ─── Delete case (hard delete — owner / delete_cases permission) ──────────────
+
+@router.delete("/{case_id}", status_code=200)
+async def delete_case(
+    case_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Permanently delete a case and all its related records."""
+    if not can_delete_cases(current_user):
+        raise HTTPException(403, "ليس لديك صلاحية حذف الطلبات")
+
+    result = await db.execute(select(Case).where(Case.id == case_id))
+    case = result.scalar_one_or_none()
+    if not case:
+        raise HTTPException(404, "الطلب غير موجود")
+
+    display_id = case.display_id
+
+    await _log_audit(db, current_user, case, AuditAction.case_rejected, {
+        "action": "hard_delete", "display_id": display_id,
+    })
+
+    await db.delete(case)
+    await db.commit()
+
+    return {"message": f"تم حذف الطلب {display_id} نهائياً"}
 
 
 # ─── Assign case ──────────────────────────────────────

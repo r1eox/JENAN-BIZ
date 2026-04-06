@@ -99,17 +99,21 @@
           <p class="text-xs text-text-light">معيّن إلى</p>
           <p class="text-sm font-bold text-brand">{{ caseData.assigned_to_name || (caseData.assigned_to ? caseData.assigned_to : 'غير معيّن') }}</p>
         </div>
-        <div>
-          <p class="text-xs text-text-light">SLA</p>
-          <p class="text-sm font-bold" :class="caseSLA > 48 ? 'text-danger' : caseSLA > 24 ? 'text-warning' : 'text-success'">
-            {{ caseSLA }}h
-          </p>
-        </div>
-      </div>
-
-      <!-- ═══ Financial Data (Employee/Supervisor/Owner) ═══ -->
-      <div v-if="role !== 'partner' && (caseData.analysis_result?.total_credit || caseData.analysis_result?.total_debit)" class="mt-4 bg-white rounded-2xl border border-border p-4">
-        <div class="flex items-center gap-2 mb-3">
+          <div class="flex items-center gap-3">
+            <!-- Assign button for supervisor/owner -->
+            <button
+              v-if="(role === 'supervisor' || role === 'owner')"
+              @click="openAssignModal"
+              class="text-xs font-bold text-blue bg-blue/10 px-2.5 py-1.5 rounded-lg hover:bg-blue/20 transition-colors cursor-pointer"
+            >
+              {{ caseData.assigned_to ? 'إعادة تعيين' : 'تعيين لموظف' }}
+            </button>
+            <div>
+              <p class="text-xs text-text-light">SLA</p>
+              <p class="text-sm font-bold" :class="caseSLA > 48 ? 'text-danger' : caseSLA > 24 ? 'text-warning' : 'text-success'">
+                {{ caseSLA }}h
+              </p>
+            </div>
           <svg class="w-5 h-5 text-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"/>
           </svg>
@@ -307,6 +311,15 @@
             class="text-xs font-bold text-brand bg-brand/10 px-3 py-2 rounded-lg hover:bg-brand/20 transition-colors cursor-pointer"
           >
             👤 حفظ كعميل
+          </button>
+
+          <!-- حذف الطلب (مالك أو صلاحية delete_cases) -->
+          <button
+            v-if="role === 'owner' || hasPermission('delete_cases')"
+            @click="showDeleteModal = true"
+            class="text-xs font-bold text-danger bg-danger/10 px-3 py-2 rounded-lg hover:bg-danger/20 transition-colors cursor-pointer"
+          >
+            🗑️ حذف الطلب نهائياً
           </button>
         </div>
       </div>
@@ -565,6 +578,52 @@
       </div>
     </Teleport>
 
+    <!-- Delete modal -->
+    <Teleport to="body">
+      <div v-if="showDeleteModal" class="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center" @click.self="showDeleteModal = false">
+        <div class="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5">
+          <h3 class="text-base font-bold text-danger mb-2">حذف الطلب نهائياً</h3>
+          <p class="text-sm text-text-light mb-4">هذا الإجراء لا يمكن التراجع عنه. سيتم حذف الطلب <span class="font-bold text-brand">{{ caseData?.display_id }}</span> وجميع بياناته نهائياً.</p>
+          <div class="flex gap-2">
+            <button @click="showDeleteModal = false" class="flex-1 py-2.5 rounded-xl border-2 border-border text-sm font-bold text-text-light cursor-pointer">إلغاء</button>
+            <button @click="doDelete" :disabled="actionLoading" class="flex-1 py-2.5 rounded-xl bg-danger text-white text-sm font-bold disabled:opacity-50 cursor-pointer">تأكيد الحذف</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Assign to employee modal -->
+    <Teleport to="body">
+      <div v-if="showAssignModal" class="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center" @click.self="showAssignModal = false">
+        <div class="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5">
+          <h3 class="text-base font-bold text-brand mb-3">تعيين الطلب لموظف</h3>
+          <div v-if="assignEmployees.length === 0" class="py-4 text-center text-xs text-text-light">جارٍ تحميل الموظفين...</div>
+          <div v-else class="space-y-2 max-h-64 overflow-y-auto mb-4">
+            <label
+              v-for="emp in assignEmployees"
+              :key="emp.id"
+              class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-colors"
+              :class="selectedEmployeeId === emp.id ? 'border-blue bg-blue/5' : 'border-border hover:bg-bg'"
+            >
+              <input type="radio" :value="emp.id" v-model="selectedEmployeeId" class="hidden" />
+              <div class="w-8 h-8 rounded-full bg-brand/10 flex items-center justify-center text-sm font-bold text-brand flex-shrink-0">
+                {{ emp.name.charAt(0) }}
+              </div>
+              <div class="flex-1">
+                <p class="text-sm font-bold text-brand">{{ emp.name }}</p>
+                <p class="text-xs text-text-light">{{ emp.phone }}</p>
+              </div>
+              <span v-if="selectedEmployeeId === emp.id" class="text-blue font-bold text-lg">✓</span>
+            </label>
+          </div>
+          <div class="flex gap-2">
+            <button @click="showAssignModal = false; selectedEmployeeId = ''" class="flex-1 py-2.5 rounded-xl border-2 border-border text-sm font-bold text-text-light cursor-pointer">إلغاء</button>
+            <button @click="doAssign" :disabled="!selectedEmployeeId || actionLoading" class="flex-1 py-2.5 rounded-xl bg-blue text-white text-sm font-bold disabled:opacity-50 cursor-pointer">تعيين</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
     <!-- حفظ كعميل modal -->
     <Teleport to="body">
       <div v-if="showSaveContactModal" class="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center" @click.self="showSaveContactModal = false">
@@ -605,9 +664,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { currentUser, canSeeEntityNames } from '../../stores/authStore'
-import { casesApi, analysisApi, contactsApi } from '../../api/client'
-import type { CaseResponse } from '../../api/client'
+import { currentUser, canSeeEntityNames, hasPermission } from '../../stores/authStore'
+import { casesApi, analysisApi, contactsApi, usersApi } from '../../api/client'
+import type { CaseResponse, UserResponse } from '../../api/client'
 import {
   STAGE_MAP,
   STAGES_ORDER,
@@ -863,6 +922,44 @@ async function doSaveContact() {
     }, 1500)
   } catch { /* silent */ }
   saveContactLoading.value = false
+}
+
+// Delete case
+const showDeleteModal = ref(false)
+async function doDelete() {
+  if (actionLoading.value) return
+  actionLoading.value = true
+  try {
+    await casesApi.deleteCase(caseId)
+    showDeleteModal.value = false
+    goBack()
+  } catch { /* silent */ }
+  actionLoading.value = false
+}
+
+// Assign to employee (supervisor/owner)
+const showAssignModal = ref(false)
+const assignEmployees = ref<UserResponse[]>([])
+const selectedEmployeeId = ref('')
+async function openAssignModal() {
+  showAssignModal.value = true
+  if (assignEmployees.value.length === 0) {
+    try {
+      const data = await usersApi.list({ role: 'employee', size: 100 })
+      assignEmployees.value = data.items
+    } catch { /* silent */ }
+  }
+}
+async function doAssign() {
+  if (!selectedEmployeeId.value || actionLoading.value) return
+  actionLoading.value = true
+  try {
+    await casesApi.assign(caseId, selectedEmployeeId.value)
+    showAssignModal.value = false
+    selectedEmployeeId.value = ''
+    await loadCase()
+  } catch { /* silent */ }
+  actionLoading.value = false
 }
 
 function goBack() {

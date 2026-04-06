@@ -296,6 +296,10 @@ export const casesApi = {
     return request('POST', `/cases/${caseId}/claim`)
   },
 
+  async deleteCase(caseId: string): Promise<{ message: string }> {
+    return request('DELETE', `/cases/${caseId}`)
+  },
+
   async addNote(caseId: string, note: string): Promise<any> {
     return request('POST', `/cases/${caseId}/notes`, { note })
   },

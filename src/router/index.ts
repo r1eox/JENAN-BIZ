@@ -46,14 +46,14 @@ const routes: RouteRecordRaw[] = [
     path: '/partner/request/new',
     name: 'RequestWizard',
     component: () => import('../views/partner/RequestWizard.vue'),
-    meta: { requiresAuth: true, roles: ['partner', 'owner'] },
+    meta: { requiresAuth: true, roles: ['partner', 'owner'], permissions: ['create_cases'] },
   },
   {
     path: '/partner/documents/:id',
     name: 'DocumentUpload',
     component: () => import('../views/partner/DocumentUpload.vue'),
     props: true,
-    meta: { requiresAuth: true, roles: ['partner', 'owner'] },
+    meta: { requiresAuth: true, roles: ['partner', 'owner'], permissions: ['create_cases'] },
   },
 
   // ─── Employee ────────────────────────
