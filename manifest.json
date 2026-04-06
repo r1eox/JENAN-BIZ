@@ -1,0 +1,22 @@
+{
+  "name": "جنان بيز — نظام إدارة التمويل",
+  "short_name": "جنان بيز",
+  "description": "نظام إدارة طلبات التمويل للشركات الصغيرة",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#1e40af",
+  "lang": "ar",
+  "dir": "rtl",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "business"]
+}
