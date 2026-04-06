@@ -75,6 +75,29 @@
         </button>
       </div>
 
+      <!-- Bulk action bar -->
+      <div v-if="users.length > 0" class="flex items-center gap-3 mb-4">
+        <button @click="toggleSelectAll"
+          class="flex items-center gap-2 text-sm px-3 py-2 rounded-xl border border-border bg-white hover:border-blue/40 transition-colors cursor-pointer">
+          <span class="w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors"
+            :class="allSelected ? 'bg-blue border-blue' : 'border-gray-300'">
+            <svg v-if="allSelected" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+            </svg>
+          </span>
+          {{ allSelected ? 'إلغاء التحديد' : 'تحديد الكل' }}
+        </button>
+        <Transition name="fade">
+          <button v-if="selected.size > 0" @click="deleteSelected"
+            class="flex items-center gap-2 text-sm px-4 py-2 rounded-xl bg-danger text-white hover:bg-red-700 transition-colors cursor-pointer font-semibold">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+            حذف المحدد ({{ selected.size }})
+          </button>
+        </Transition>
+      </div>
+
       <!-- Loading -->
       <div v-if="loading" class="flex justify-center py-16">
         <div class="w-8 h-8 border-3 border-blue/30 border-t-blue rounded-full animate-spin"></div>
@@ -83,11 +106,20 @@
       <!-- Users List (card-based) -->
       <div v-else class="space-y-3">
         <div v-for="user in users" :key="user.id"
-          class="bg-white rounded-2xl border border-border overflow-hidden transition-all"
-          :class="{ 'opacity-60': !user.is_active }">
+          class="bg-white rounded-2xl border border-border overflow-hidden transition-all cursor-pointer"
+          :class="{ 'opacity-60': !user.is_active, 'ring-2 ring-blue/30 bg-blue/5': selected.has(user.id) }"
+          @click="toggleSelect(user.id)">
 
           <!-- User header -->
-          <div class="p-4 flex items-center gap-3 flex-wrap">
+          <div class="p-4 flex items-center gap-3 flex-wrap" @click.stop>
+            <!-- Checkbox -->
+            <span class="w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors"
+              :class="selected.has(user.id) ? 'bg-blue border-blue' : 'border-gray-300'">
+              <svg v-if="selected.has(user.id)" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+              </svg>
+            </span>
+
             <!-- Avatar -->
             <div class="w-10 h-10 rounded-xl font-bold text-base flex items-center justify-center flex-shrink-0"
               :class="roleStyle(user.role).bg + ' ' + roleStyle(user.role).text">
@@ -126,6 +158,10 @@
                 class="text-xs px-2.5 py-1.5 rounded-lg border cursor-pointer transition-colors"
                 :class="user.is_active ? 'border-danger/30 text-danger hover:bg-danger/5' : 'border-success/30 text-success hover:bg-success/5'">
                 {{ user.is_active ? 'تعطيل' : 'تفعيل' }}
+              </button>
+              <button @click="deleteUser(user)" title="حذف المستخدم"
+                class="text-xs px-2.5 py-1.5 rounded-lg border border-danger/30 text-danger hover:bg-danger/5 cursor-pointer transition-colors">
+                حذف
               </button>
             </div>
           </div>
@@ -412,6 +448,29 @@ async function toggleActive(user: UserResponse) {
   } catch { /* silent */ }
 }
 
+// ─── Bulk select ─────────────────────────────────────
+const selected = ref<Set<string>>(new Set())
+const allSelected = computed(() => users.value.length > 0 && users.value.every(u => selected.value.has(u.id)))
+function toggleSelect(id: string) {
+  const s = new Set(selected.value); s.has(id) ? s.delete(id) : s.add(id); selected.value = s
+}
+function toggleSelectAll() {
+  allSelected.value ? selected.value = new Set() : selected.value = new Set(users.value.map(u => u.id))
+}
+async function deleteUser(user: UserResponse) {
+  if (!confirm(`حذف المستخدم ${user.name}؟`)) return
+  try { await usersApi.deactivate(user.id); showToast('تم حذف المستخدم'); fetchUsers() } catch { /* silent */ }
+}
+async function deleteSelected() {
+  if (!confirm(`حذف ${selected.value.size} مستخدم؟`)) return
+  try {
+    await Promise.all([...selected.value].map(id => usersApi.deactivate(id)))
+    selected.value = new Set()
+    showToast('تم حذف المستخدمين المحددين')
+    fetchUsers()
+  } catch { /* silent */ }
+}
+
 // ─── Pending Partners ─────────────────────────────────
 const pendingPartners = ref<any[]>([])
 async function fetchPendingPartners() {
@@ -462,5 +521,7 @@ function showToast(msg: string) { toast.value = msg; setTimeout(() => { toast.va
 <style scoped>
 .toast-enter-active, .toast-leave-active { transition: all 0.3s ease; }
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translate(-50%, 10px); }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s, transform 0.2s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; transform: scale(0.95); }
 </style>
 

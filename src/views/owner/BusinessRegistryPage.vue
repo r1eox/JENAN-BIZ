@@ -25,6 +25,29 @@
           class="w-full px-4 py-2.5 text-sm border border-border rounded-xl focus:outline-none focus:border-blue bg-white" />
       </div>
 
+      <!-- Bulk action bar -->
+      <div v-if="canManage && filtered.length > 0" class="flex items-center gap-3 mb-5">
+        <button @click="toggleSelectAll"
+          class="flex items-center gap-2 text-sm px-3 py-2 rounded-xl border border-border bg-white hover:border-blue/40 transition-colors cursor-pointer">
+          <span class="w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors"
+            :class="allSelected ? 'bg-blue border-blue' : 'border-gray-300'">
+            <svg v-if="allSelected" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+            </svg>
+          </span>
+          {{ allSelected ? 'إلغاء التحديد' : 'تحديد الكل' }}
+        </button>
+        <Transition name="fade">
+          <button v-if="selected.size > 0" @click="deleteSelected"
+            class="flex items-center gap-2 text-sm px-4 py-2 rounded-xl bg-danger text-white hover:bg-red-700 transition-colors cursor-pointer font-semibold">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+            حذف المحدد ({{ selected.size }})
+          </button>
+        </Transition>
+      </div>
+
       <!-- Loading -->
       <div v-if="loading" class="text-center text-text-light py-20">جاري التحميل...</div>
 
@@ -37,11 +60,21 @@
       <!-- Grid -->
       <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div v-for="biz in filtered" :key="biz.id"
-          class="bg-white rounded-2xl border border-border p-5 space-y-3 hover:shadow-sm transition-shadow">
+          class="bg-white rounded-2xl border p-5 space-y-3 hover:shadow-sm transition-all cursor-pointer"
+          :class="selected.has(biz.id) ? 'border-blue/40 ring-2 ring-blue/20 bg-blue/5' : 'border-border'"
+          @click="canManage && toggleSelect(biz.id)">
           <div class="flex justify-between items-start">
-            <div>
-              <p class="font-semibold text-brand">{{ biz.company_name }}</p>
-              <p v-if="biz.activity" class="text-xs text-text-light">{{ biz.activity }}</p>
+            <div class="flex items-start gap-2 flex-1">
+              <span v-if="canManage" class="mt-0.5 w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors"
+                :class="selected.has(biz.id) ? 'bg-blue border-blue' : 'border-gray-300'">
+                <svg v-if="selected.has(biz.id)" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                </svg>
+              </span>
+              <div>
+                <p class="font-semibold text-brand">{{ biz.company_name }}</p>
+                <p v-if="biz.activity" class="text-xs text-text-light">{{ biz.activity }}</p>
+              </div>
             </div>
             <span v-if="biz.city" class="text-xs bg-success/10 text-success px-2 py-1 rounded-lg">{{ biz.city }}</span>
           </div>
@@ -58,7 +91,7 @@
             <span v-if="biz.establishment_year" class="text-xs text-text-light">تأسيس: {{ biz.establishment_year }}</span>
           </div>
           <p v-if="biz.notes" class="text-xs text-text-light bg-bg rounded-lg px-3 py-2">{{ biz.notes }}</p>
-          <div v-if="canManage" class="flex gap-2 pt-1">
+          <div v-if="canManage" class="flex gap-2 pt-1" @click.stop>
             <button @click="openEdit(biz)" class="text-xs text-blue border border-blue/30 px-3 py-1.5 rounded-lg hover:bg-blue/5 cursor-pointer transition-colors">تعديل</button>
             <button @click="deleteBiz(biz)" class="text-xs text-danger border border-danger/30 px-3 py-1.5 rounded-lg hover:bg-danger/5 cursor-pointer transition-colors">حذف</button>
           </div>
@@ -141,6 +174,25 @@ const loading = ref(false)
 const search = ref('')
 const toast = ref('')
 const showModal = ref(false)
+
+// Bulk select
+const selected = ref<Set<string>>(new Set())
+const allSelected = computed(() => filtered.value.length > 0 && filtered.value.every(b => selected.value.has(b.id)))
+function toggleSelect(id: string) {
+  const s = new Set(selected.value); s.has(id) ? s.delete(id) : s.add(id); selected.value = s
+}
+function toggleSelectAll() {
+  allSelected.value ? selected.value = new Set() : selected.value = new Set(filtered.value.map(b => b.id))
+}
+async function deleteSelected() {
+  if (!confirm(`حذف ${selected.value.size} منشأة؟`)) return
+  try {
+    await Promise.all([...selected.value].map(id => businessesApi.remove(id)))
+    selected.value = new Set()
+    showToast('تم حذف العناصر المحددة')
+    await load()
+  } catch { /**/ }
+}
 const editing = ref<any>(null)
 const formError = ref('')
 const saving = ref(false)
@@ -200,4 +252,6 @@ onMounted(load)
 <style scoped>
 .toast-enter-active, .toast-leave-active { transition: all 0.3s ease; }
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translate(-50%, 10px); }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s, transform 0.2s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; transform: scale(0.95); }
 </style>
