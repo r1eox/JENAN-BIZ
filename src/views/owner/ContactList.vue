@@ -550,7 +550,7 @@ async function exportCSV() {
         `"${(c.group_name || '').replace(/"/g, '""')}"`,
         `"${sourceLabel(c.source)}"`,
         `"${(c.notes || '').replace(/"/g, '""')}"`,
-        `"${c.created_at ? new Date(c.created_at).toLocaleDateString('ar-SA') : ''}"`,
+        `"${c.created_at ? new Date(/[Zz]|[+\-]\d{2}:?\d{2}$/.test(c.created_at) ? c.created_at : c.created_at + 'Z').toLocaleDateString('ar-SA') : ''}"`,
       ].join(','))
     ]
     const bom = '\uFEFF' // UTF-8 BOM for Arabic support in Excel

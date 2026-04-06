@@ -276,7 +276,8 @@ function statusConfig(status: ReqStatus) {
 }
 
 function formatDate(iso: string): string {
-  const d = new Date(iso)
+  const s = /[Zz]|[+\-]\d{2}:?\d{2}$/.test(iso) ? iso : iso + 'Z'
+  const d = new Date(s)
   return d.toLocaleDateString('ar-SA', {
     year: 'numeric',
     month: 'short',

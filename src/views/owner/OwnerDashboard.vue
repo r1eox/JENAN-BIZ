@@ -405,7 +405,7 @@ async function exportCasesCSV() {
       `"${stageConf(c.stage)?.label ?? c.stage}"`,
       `"${c.offer_code ?? ''}"`,
       `"${c.is_eligible ? 'مؤهل' : 'غير مؤهل'}"`,
-      `"${c.created_at ? new Date(c.created_at).toLocaleDateString('ar-SA') : ''}"`
+      `"${c.created_at ? new Date(/[Zz]|[+\-]\d{2}:?\d{2}$/.test(c.created_at) ? c.created_at : c.created_at + 'Z').toLocaleDateString('ar-SA') : ''}"`
     ].join(','))]
     const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
@@ -417,7 +417,8 @@ async function exportCasesCSV() {
   } catch { /* silent */ }
 }
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  const s = /[Zz]|[+\-]\d{2}:?\d{2}$/.test(iso) ? iso : iso + 'Z'
+  return new Date(s).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 function openCase(id: string) { router.push(`/case/${id}`) }
 

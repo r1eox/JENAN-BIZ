@@ -402,7 +402,8 @@ function isExtra(u: UserResponse, key: string) {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' })
+  const s = /[Zz]|[+\-]\d{2}:?\d{2}$/.test(iso) ? iso : iso + 'Z'
+  return new Date(s).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 // ─── Create / Edit Modal ──────────────────────────────
