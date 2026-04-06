@@ -314,14 +314,21 @@
           </button>
 
           <!-- حذف الطلب (مالك أو صلاحية delete_cases) -->
-          <button
-            v-if="role === 'owner' || hasPermission('delete_cases')"
-            @click="showDeleteModal = true"
-            class="text-xs font-bold text-danger bg-danger/10 px-3 py-2 rounded-lg hover:bg-danger/20 transition-colors cursor-pointer"
-          >
-            🗑️ حذف الطلب نهائياً
-          </button>
+          <!-- مُزال من هنا وموجود في قسم مستقل أدناه -->
         </div>
+      </div>
+
+      <!-- زونة الحذف — تظهر دائماً للمالك/صلاحية delete_cases -->
+      <div v-if="role === 'owner' || hasPermission('delete_cases')" class="mt-4">
+        <button
+          @click="showDeleteModal = true"
+          class="w-full text-xs font-bold text-danger bg-danger/5 border border-danger/20 px-4 py-3 rounded-2xl hover:bg-danger/10 transition-colors cursor-pointer flex items-center justify-center gap-2"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+          حذف الطلب نهائياً
+        </button>
       </div>
 
       <!-- ═══ Owner Override ═══ -->

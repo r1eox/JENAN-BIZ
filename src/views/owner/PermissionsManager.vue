@@ -315,6 +315,12 @@ function isExtraPerm(user: UserResponse, perm: string): boolean {
   return extra.includes(perm)
 }
 
+// Supplemental permissions known to frontend (fallback if backend hasn't deployed yet)
+const SUPPLEMENTAL_PERMISSIONS = [
+  { key: 'delete_cases',  label: 'حذف الطلبات نهائياً' },
+  { key: 'create_cases',  label: 'رفع طلبات تحليل جديدة (للموظفين)' },
+]
+
 // ─── Load data ──────────────────────────────────────
 onMounted(async () => {
   await fetchDefinitions()
@@ -324,6 +330,11 @@ onMounted(async () => {
 async function fetchDefinitions() {
   try {
     const data = await permissionsApi.getDefinitions()
+    // Merge: add any supplemental permissions not already returned by the backend
+    const existingKeys = new Set(data.all_permissions.map((p: any) => p.key))
+    for (const perm of SUPPLEMENTAL_PERMISSIONS) {
+      if (!existingKeys.has(perm.key)) data.all_permissions.push(perm)
+    }
     definitions.value = data
   } catch { /* silent */ }
 }

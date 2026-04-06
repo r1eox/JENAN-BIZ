@@ -157,15 +157,29 @@
       <!-- Cases Section -->
       <div class="flex items-center justify-between mb-3 mt-2">
         <h2 class="text-lg font-bold text-brand">الطلبات</h2>
-        <button @click="exportCasesCSV"
-          class="flex items-center gap-1.5 text-xs font-bold text-success bg-success/10 px-3 py-1.5 rounded-lg hover:bg-success/20 transition-colors cursor-pointer">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          تصدير CSV
-        </button>
+        <div class="flex items-center gap-2">
+          <!-- Bulk delete button -->
+          <button
+            v-if="selectedCaseIds.size > 0"
+            @click="bulkDeleteCases"
+            :disabled="bulkDeleting"
+            class="flex items-center gap-1.5 text-xs font-bold text-danger bg-danger/10 px-3 py-1.5 rounded-lg hover:bg-danger/20 transition-colors cursor-pointer disabled:opacity-50"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+            {{ bulkDeleting ? 'جارٍ...' : `حذف (${selectedCaseIds.size})` }}
+          </button>
+          <button @click="exportCasesCSV"
+            class="flex items-center gap-1.5 text-xs font-bold text-success bg-success/10 px-3 py-1.5 rounded-lg hover:bg-success/20 transition-colors cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            تصدير CSV
+          </button>
+        </div>
       </div>
 
       <!-- Cases Tabs -->
@@ -194,46 +208,74 @@
         <p class="text-sm text-text-light mt-2">جاري تحميل الطلبات...</p>
       </div>
 
+      <!-- Select all bar -->
+      <div v-if="!casesLoading && filteredOwnerCases.length > 0" class="flex items-center gap-3 bg-white rounded-xl border border-border px-4 py-2.5 mb-2">
+        <input
+          type="checkbox"
+          :checked="allSelected"
+          @change="toggleSelectAll"
+          class="w-4 h-4 accent-blue cursor-pointer rounded"
+        />
+        <span class="text-xs text-text-light flex-1">
+          {{ selectedCaseIds.size > 0 ? `تم تحديد ${selectedCaseIds.size} من ${filteredOwnerCases.length}` : 'تحديد الكل' }}
+        </span>
+        <button v-if="selectedCaseIds.size > 0" @click="selectedCaseIds = new Set()" class="text-xs text-text-light hover:text-danger cursor-pointer">إلغاء</button>
+      </div>
+
       <!-- Cases list -->
-      <div v-else class="space-y-3 mb-6">
+      <div v-if="!casesLoading" class="space-y-2 mb-6">
         <div v-if="filteredOwnerCases.length === 0" class="bg-white rounded-2xl border border-border p-8 text-center">
           <p class="text-sm text-text-light">لا توجد طلبات</p>
         </div>
 
-        <button
+        <div
           v-for="c in filteredOwnerCases"
           :key="c.id"
-          @click="openCase(c.id)"
-          class="w-full bg-white rounded-2xl border border-border p-4 text-right hover:border-blue/30 hover:shadow-sm transition-all cursor-pointer"
+          class="bg-white rounded-2xl border p-4 text-right transition-all"
+          :class="selectedCaseIds.has(c.id) ? 'border-danger/40 bg-danger/2' : 'border-border hover:border-blue/30 hover:shadow-sm'"
         >
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-1 flex-wrap">
-                <span class="text-xs font-mono text-text-light">{{ c.display_id }}</span>
-                <span v-if="!c.assigned_to" class="text-[10px] font-bold bg-warning/10 text-warning px-1.5 py-0.5 rounded">غير معيّن</span>
-              </div>
-              <p class="font-bold text-brand text-sm truncate">{{ c.company_name || '—' }}</p>
-              <div class="flex items-center gap-3 mt-1 text-xs text-text-light flex-wrap">
-                <span>المنتج: <span class="font-mono text-brand">{{ c.offer_code || '—' }}</span></span>
-                <span v-if="c.entity_name" class="font-medium text-blue">{{ c.entity_name }}</span>
-              </div>
+          <div class="flex items-start gap-3">
+            <!-- Checkbox -->
+            <div class="flex-shrink-0 pt-0.5" @click.stop>
+              <input
+                type="checkbox"
+                :checked="selectedCaseIds.has(c.id)"
+                @change="toggleSelectCase(c.id)"
+                class="w-4 h-4 accent-danger cursor-pointer rounded"
+              />
             </div>
-            <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
-              <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium"
-                :class="[stageConf(c.stage).bgColor, stageConf(c.stage).color]">
-                {{ stageConf(c.stage).label }}
-              </span>
-              <span class="text-[10px] text-text-light">{{ formatDate(c.updated_at) }}</span>
+            <!-- Content -->
+            <div class="flex-1 min-w-0 cursor-pointer" @click="openCase(c.id)">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1 flex-wrap">
+                    <span class="text-xs font-mono text-text-light">{{ c.display_id }}</span>
+                    <span v-if="!c.assigned_to" class="text-[10px] font-bold bg-warning/10 text-warning px-1.5 py-0.5 rounded">غير معيّن</span>
+                  </div>
+                  <p class="font-bold text-brand text-sm truncate">{{ c.company_name || '—' }}</p>
+                  <div class="flex items-center gap-3 mt-1 text-xs text-text-light flex-wrap">
+                    <span>المنتج: <span class="font-mono text-brand">{{ c.offer_code || '—' }}</span></span>
+                    <span v-if="c.entity_name" class="font-medium text-blue">{{ c.entity_name }}</span>
+                  </div>
+                </div>
+                <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
+                  <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium"
+                    :class="[stageConf(c.stage).bgColor, stageConf(c.stage).color]">
+                    {{ stageConf(c.stage).label }}
+                  </span>
+                  <span class="text-[10px] text-text-light">{{ formatDate(c.updated_at) }}</span>
+                </div>
+              </div>
+              <div class="mt-2.5">
+                <div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all"
+                    :class="c.stage === 'rejected' ? 'bg-danger' : 'bg-blue'"
+                    :style="{ width: stageProgress(c.stage) + '%' }"></div>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="mt-2.5">
-            <div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-              <div class="h-full rounded-full transition-all"
-                :class="c.stage === 'rejected' ? 'bg-danger' : 'bg-blue'"
-                :style="{ width: stageProgress(c.stage) + '%' }"></div>
-            </div>
-          </div>
-        </button>
+        </div>
       </div>
 
       <!-- Navigation Cards -->
@@ -421,6 +463,40 @@ function formatDate(iso: string) {
   return new Date(s).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 function openCase(id: string) { router.push(`/case/${id}`) }
+
+// ─── Bulk select/delete cases ───────────────────────────────────────────────────────────
+const selectedCaseIds = ref<Set<string>>(new Set())
+const bulkDeleting = ref(false)
+
+const allSelected = computed(() =>
+  filteredOwnerCases.value.length > 0 &&
+  filteredOwnerCases.value.every(c => selectedCaseIds.value.has(c.id))
+)
+
+function toggleSelectCase(id: string) {
+  if (selectedCaseIds.value.has(id)) selectedCaseIds.value.delete(id)
+  else selectedCaseIds.value.add(id)
+  selectedCaseIds.value = new Set(selectedCaseIds.value) // trigger reactivity
+}
+
+function toggleSelectAll() {
+  if (allSelected.value) {
+    selectedCaseIds.value = new Set()
+  } else {
+    selectedCaseIds.value = new Set(filteredOwnerCases.value.map(c => c.id))
+  }
+}
+
+async function bulkDeleteCases() {
+  if (selectedCaseIds.value.size === 0) return
+  if (!confirm(`هل تريد حذف ${selectedCaseIds.value.size} طلب نهائياً؟ لا يمكن التراجع عن هذا الإجراء.`)) return
+  bulkDeleting.value = true
+  const ids = [...selectedCaseIds.value]
+  await Promise.allSettled(ids.map(id => casesApi.deleteCase(id)))
+  selectedCaseIds.value = new Set()
+  bulkDeleting.value = false
+  await loadCases()
+}
 
 const analytics = ref({
   total_requests: 0,
